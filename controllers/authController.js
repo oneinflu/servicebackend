@@ -172,3 +172,37 @@ exports.login = async (req, res) => {
     });
   }
 };
+
+exports.getProfile = async (req, res) => {
+  try {
+    // Get user with referral information populated
+    const user = await User.findById(req.user._id)
+      .populate('referredBy', 'name email referralId')
+      .populate('referredUsers', 'name email referralId');
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          isAdmin: user.isAdmin,
+          skippedCompanyInfo: user.skippedCompanyInfo,
+          referralId: user.referralId,
+          referralCount: user.referralCount,
+          referredBy: user.referredBy,
+          referredUsers: user.referredUsers,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }
+      }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
