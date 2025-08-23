@@ -14,6 +14,9 @@ exports.createCompany = async (req, res) => {
       user: req.user._id
     });
 
+    // Update the user's company field
+    await req.user.updateOne({ company: company._id });
+
     res.status(201).json({
       status: 'success',
       data: {
@@ -99,33 +102,53 @@ exports.updateCompany = async (req, res) => {
   try {
     const { name, location, website, about, logo } = req.body;
 
-    const company = await Company.findById(req.params.id);
+    let company = await Company.findById(req.params.id);
+    let isNewCompany = false;
 
-    if (!company) {
+    // If no company found and user doesn't have a company, create a new one
+    if (!company && !req.user.company) {
+      company = await Company.create({
+        name,
+        location,
+        website,
+        about,
+        logo,
+        user: req.user._id
+      });
+      isNewCompany = true;
+    } else if (!company) {
       return res.status(404).json({
         status: 'error',
         message: 'Company not found'
       });
     }
 
-    // Check if the company belongs to the logged-in user
-    if (company.user.toString() !== req.user._id.toString()) {
+    // If updating existing company, check authorization
+    if (!isNewCompany && company.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         status: 'error',
         message: 'You are not authorized to update this company'
       });
     }
 
-    const updatedCompany = await Company.findByIdAndUpdate(
-      req.params.id,
-      { name, location, website, about, logo },
-      { new: true, runValidators: true }
-    );
+    // Update company if not newly created
+    if (!isNewCompany) {
+      company = await Company.findByIdAndUpdate(
+        req.params.id,
+        { name, location, website, about, logo },
+        { new: true, runValidators: true }
+      );
+    }
+
+    // Update user's company field if it's a new company
+    if (isNewCompany) {
+      await req.user.updateOne({ company: company._id });
+    }
 
     res.status(200).json({
       status: 'success',
       data: {
-        company: updatedCompany
+        company
       }
     });
   } catch (error) {

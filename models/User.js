@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company'
+  },
   referralId: {
     type: String,
     unique: true
