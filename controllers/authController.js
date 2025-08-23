@@ -205,4 +205,4 @@ exports.getProfile = async (req, res) => {
       message: error.message
     });
   }
-};
+}
