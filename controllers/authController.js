@@ -175,10 +175,11 @@ exports.login = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    // Get user with referral information populated
+    // Get user with referral and company information populated
     const user = await User.findById(req.user._id)
       .populate('referredBy', 'name email referralId')
-      .populate('referredUsers', 'name email referralId');
+      .populate('referredUsers', 'name email referralId')
+      .populate('company');
 
     res.status(200).json({
       status: 'success',
@@ -194,6 +195,7 @@ exports.getProfile = async (req, res) => {
           referralCount: user.referralCount,
           referredBy: user.referredBy,
           referredUsers: user.referredUsers,
+          company: user.company,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
@@ -205,4 +207,4 @@ exports.getProfile = async (req, res) => {
       message: error.message
     });
   }
-}
+};
