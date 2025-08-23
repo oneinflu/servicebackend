@@ -15,12 +15,17 @@ exports.createCompany = async (req, res) => {
     });
 
     // Update the user's company field
-    await req.user.updateOne({ company: company._id });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { company: company._id },
+      { new: true }
+    ).populate('company');
 
     res.status(201).json({
       status: 'success',
       data: {
-        company
+        company,
+        user: updatedUser
       }
     });
   } catch (error) {
