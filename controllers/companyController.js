@@ -1,4 +1,5 @@
 const Company = require('../models/Company');
+const User = require('../models/User');
 
 // Create a new company
 exports.createCompany = async (req, res) => {
