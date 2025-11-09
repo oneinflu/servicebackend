@@ -52,7 +52,23 @@ const userSchema = new mongoose.Schema({
   referredUsers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  // Wallet balance from referral commissions
+  walletBalance: {
+    type: Number,
+    default: 0
+  },
+  // User's job search preferences
+  interestedJobCategories: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
+  }],
+  // Optional resume URL (link to external file or storage)
+  resumeUrl: {
+    type: String,
+    trim: true,
+    default: ''
+  }
 }, {
   timestamps: true
 });

@@ -7,6 +7,10 @@ const companySchema = new mongoose.Schema({
     trim: true
   },
   location: {
+    address: {
+      type: String,
+      required: [true, 'Address is required']
+    },
     country: {
       type: String,
       required: [true, 'Country is required']

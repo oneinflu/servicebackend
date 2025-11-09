@@ -14,6 +14,10 @@ const serviceSchema = new mongoose.Schema({
     }
   }],
   location: {
+    address: {
+      type: String,
+      required: [true, 'Address is required']
+    },
     district: {
       type: String,
       required: [true, 'District is required']

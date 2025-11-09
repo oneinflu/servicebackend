@@ -12,10 +12,22 @@ const viewRoutes = require('./routes/viewRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const governmentJobRoutes = require('./routes/governmentJobRoutes');
 const companyRoutes = require('./routes/companyRoutes');
+const usageRoutes = require('./routes/usageRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const referralRoutes = require('./routes/referralRoutes');
+const walletRoutes = require('./routes/walletRoutes');
 const app = express();
 
 // Middleware
-app.use(cors());
+// CORS: allow any origin (React dev port changes), and Authorization header
+const corsOptions = {
+  origin: (origin, callback) => callback(null, true),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+  maxAge: 86400, // cache preflight for 1 day
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -37,6 +49,10 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/government-jobs', governmentJobRoutes);
 app.use('/api/companies', companyRoutes);
+app.use('/api/usage', usageRoutes);
+app.use('/api/uploads', uploadRoutes);
+app.use('/api/referrals', referralRoutes);
+app.use('/api/wallet', walletRoutes);
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))

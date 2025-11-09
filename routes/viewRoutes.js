@@ -1,12 +1,11 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');
+// Note: Do not protect the payment view; the page itself uses token-based API calls.
 
 const router = express.Router();
 
-router.get('/payment', protect, (req, res) => {
+router.get('/payment', (req, res) => {
   res.render('payment', {
-    user: req.user,
-    layout: false // if you don't have a layout file yet
+    layout: false
   });
 });
 

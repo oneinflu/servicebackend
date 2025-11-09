@@ -100,7 +100,7 @@ exports.registerAdmin = async (req, res) => {
       email,
       phone,
       password,
-      role: 'admin'
+      isAdmin: true
     });
 
     // Generate token
@@ -115,7 +115,7 @@ exports.registerAdmin = async (req, res) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: user.role
+          isAdmin: user.isAdmin
         }
       }
     });
@@ -200,6 +200,84 @@ exports.getProfile = async (req, res) => {
           updatedAt: user.updatedAt
         }
       }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Update authenticated user's basic profile fields
+exports.updateProfile = async (req, res) => {
+  try {
+    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo'];
+    const updates = {};
+    for (const key of allowedFields) {
+      if (key in req.body) updates[key] = req.body[key];
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, {
+      new: true,
+      runValidators: true,
+    })
+      .populate('referredBy', 'name email referralId')
+      .populate('referredUsers', 'name email referralId')
+      .populate('company');
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user: {
+          id: updatedUser._id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          isAdmin: updatedUser.isAdmin,
+          skippedCompanyInfo: updatedUser.skippedCompanyInfo,
+          referralId: updatedUser.referralId,
+          referralCount: updatedUser.referralCount,
+          referredBy: updatedUser.referredBy,
+          referredUsers: updatedUser.referredUsers,
+          company: updatedUser.company,
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt,
+        }
+      }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Admin: list all users (basic fields)
+exports.getAllUsers = async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied. Admins only.'
+      });
+    }
+
+    const users = await User.find()
+      .select('name email phone isAdmin referralId referralCount createdAt updatedAt');
+
+    res.status(200).json({
+      status: 'success',
+      results: users.length,
+      data: { users }
     });
   } catch (error) {
     res.status(400).json({

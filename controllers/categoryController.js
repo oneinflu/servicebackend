@@ -74,3 +74,72 @@ exports.getCategoriesByType = async (req, res) => {
     });
   }
 };
+
+// Update a single category by ID
+exports.updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, type } = req.body || {};
+
+    if (!name && !type) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Nothing to update. Provide name and/or type.'
+      });
+    }
+
+    if (type && !['Service', 'Job'].includes(type)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Type must be either "Service" or "Job"'
+      });
+    }
+
+    const updated = await Category.findByIdAndUpdate(
+      id,
+      { ...(name ? { name } : {}), ...(type ? { type } : {}) },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Category not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { category: updated }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Delete a single category by ID
+exports.deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = await Category.findById(id);
+    if (!existing) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Category not found'
+      });
+    }
+    await Category.findByIdAndDelete(id);
+    res.status(200).json({
+      status: 'success',
+      message: 'Category deleted'
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};

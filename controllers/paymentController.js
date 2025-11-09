@@ -2,6 +2,9 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Transaction = require('../models/Transaction');
 const Subscription = require('../models/Subscription');
+const User = require('../models/User');
+const Commission = require('../models/Commission');
+const ReferralSettings = require('../models/ReferralSettings');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -130,7 +133,7 @@ exports.verifyPayment = async (req, res) => {
     }
 
     // Verify payment status with Razorpay
-    const payment = await razorpay.payments.fetch(razorpay_payment_id);
+const payment = await razorpay.payments.fetch(razorpay_payment_id);
     
     if (payment.status !== 'captured') {
       console.error('Payment not captured:', payment.status);
@@ -161,6 +164,9 @@ exports.verifyPayment = async (req, res) => {
       startDate: new Date(),
       endDate
     });
+
+    // Credit referral commissions up to 10 levels
+    await creditReferralCommissions(req.user._id, subscriptionType, subscriptionPrices[subscriptionType], transaction._id);
 
     console.log('Payment verification successful:', {
       transactionId: transaction._id,
@@ -204,3 +210,74 @@ exports.getMyTransactions = async (req, res) => {
     });
   }
 };
+
+// Admin: list all payment transactions
+exports.getAllTransactionsAdmin = async (req, res) => {
+  try {
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ status: 'error', message: 'Admins only' });
+    }
+
+    const transactions = await Transaction.find()
+      .sort({ createdAt: -1 })
+      .populate('user', 'name email phone');
+
+    // Summary totals by subscription type and overall
+    const summary = transactions.reduce((acc, t) => {
+      const type = t.subscriptionType;
+      const status = t.status;
+      acc.totalAmount += (status === 'completed' ? (t.amount || 0) : 0);
+      acc.counts.total += 1;
+      acc.counts[status] = (acc.counts[status] || 0) + 1;
+      acc.byType[type] = acc.byType[type] || { amount: 0, count: 0 };
+      if (status === 'completed') acc.byType[type].amount += (t.amount || 0);
+      acc.byType[type].count += 1;
+      return acc;
+    }, { totalAmount: 0, counts: { total: 0, completed: 0, pending: 0, failed: 0 }, byType: {} });
+
+    res.status(200).json({
+      status: 'success',
+      results: transactions.length,
+      data: { transactions, summary }
+    });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Helper: credit commissions to ancestors up to 10 levels
+async function creditReferralCommissions(payerUserId, subscriptionType, amount, transactionId) {
+  try {
+    // Use admin-defined rates if available
+    const settings = await ReferralSettings.findOne().lean();
+    const defaultRates = Array.from({ length: 10 }, (_, i) => Math.pow(0.1, i + 1));
+    const rates = (settings?.levelRates && settings.levelRates.length > 0) ? settings.levelRates : defaultRates;
+
+    let currentUser = await User.findById(payerUserId).select('referredBy').lean();
+    for (let level = 1; level <= Math.min(10, rates.length); level++) {
+      if (!currentUser || !currentUser.referredBy) break;
+      const ancestor = await User.findById(currentUser.referredBy).select('walletBalance').lean();
+      if (!ancestor) break;
+      const commissionAmount = parseFloat((amount * rates[level - 1]).toFixed(2));
+
+      // Create commission record
+      await Commission.create({
+        receiver: ancestor._id,
+        sourceUser: payerUserId,
+        transaction: transactionId,
+        subscriptionType,
+        level,
+        amount: commissionAmount,
+        status: 'earned'
+      });
+
+      // Increment receiver wallet balance
+      await User.updateOne({ _id: ancestor._id }, { $inc: { walletBalance: commissionAmount } });
+
+      // Move up the tree
+      currentUser = await User.findById(ancestor._id).select('referredBy').lean();
+    }
+  } catch (err) {
+    console.error('Referral commission credit error:', err);
+  }
+}

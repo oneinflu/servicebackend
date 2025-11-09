@@ -21,12 +21,37 @@
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
-// Get token from localStorage
-const token = localStorage.getItem('token');
+// Get token from localStorage or query parameter
+let token = localStorage.getItem('token');
+try {
+  const params = new URLSearchParams(window.location.search);
+  const tokenParam = params.get('token');
+  if (!token && tokenParam) {
+    localStorage.setItem('token', tokenParam);
+    token = tokenParam;
+  }
+} catch (e) {
+  // ignore
+}
 if (!token) {
   alert('Please login first');
   window.location.href = '/login';
 }
+
+// Auto-start Razorpay checkout if subscription type provided via query string
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type');
+    const allowed = ['SERVICE_SEARCH', 'JOB_SEARCH', 'SERVICE_POST'];
+    if (type && allowed.includes(type)) {
+      // Slight delay to ensure Razorpay script is ready
+      setTimeout(() => makePayment(type, 0), 50);
+    }
+  } catch (e) {
+    // Fallback to manual buttons
+  }
+});
 
 function makePayment(subscriptionType, amount) {
   fetch('/api/payments/create-order', {  // Remove the token from URL

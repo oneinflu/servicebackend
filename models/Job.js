@@ -7,6 +7,10 @@ const jobSchema = new mongoose.Schema({
     required: [true, 'At least one category is required']
   }],
   location: {
+    address: {
+      type: String,
+      required: [true, 'Address is required']
+    },
     district: {
       type: String,
       required: [true, 'District is required']

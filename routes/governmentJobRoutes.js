@@ -2,6 +2,7 @@ const express = require('express');
 const {
   createGovernmentJob,
   getAllGovernmentJobs,
+  searchGovernmentJobs,
   getGovernmentJobById,
   updateGovernmentJob,
   deleteGovernmentJob
@@ -23,6 +24,7 @@ const isAdmin = (req, res, next) => {
 
 // Public routes
 router.get('/', getAllGovernmentJobs);
+router.get('/search', searchGovernmentJobs);
 router.get('/:id', getGovernmentJobById);
 
 // Protected routes (admin only)

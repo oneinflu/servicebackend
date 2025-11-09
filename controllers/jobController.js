@@ -1,6 +1,7 @@
 const Job = require('../models/Job');
 const Category = require('../models/Category');
 const Subscription = require('../models/Subscription');
+const User = require('../models/User');
 
 exports.createJob = async (req, res) => {
   try {
@@ -27,9 +28,24 @@ exports.createJob = async (req, res) => {
       });
     }
 
+    // Validate full location including address
+    if (!location || !location.address || !location.district || !location.state || !location.city || !location.country || !location.pincode) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Full location is required (address, district, state, city, country, pincode)'
+      });
+    }
+
     const job = await Job.create({
       categories: categoriesIds,
-      location,
+      location: {
+        address: location.address,
+        district: location.district,
+        state: location.state,
+        city: location.city,
+        country: location.country,
+        pincode: location.pincode,
+      },
       isCompanyPost: isCompanyPost || false,
       companyId: companyId || null,
       user: req.user._id // Assuming you have authentication middleware
@@ -70,22 +86,29 @@ exports.getMyJobs = async (req, res) => {
 };
 exports.getAllJobs = async (req, res) => {
   try {
-    // Check if user has valid subscription for job search
-    const userSubscriptions = await Subscription.find({
-      user: req.user._id,
-      endDate: { $gte: new Date() }
-    });
-
-    const canSearchJobs = userSubscriptions.some(sub => 
-      ['JOB_SEARCH', 'SERVICE_POST'].includes(sub.type)
-    );
-
-    if (!canSearchJobs) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Please subscribe to search jobs',
-        subscriptionRequired: true
+    // Admins can access all jobs without subscription checks
+    if (!req.user.isAdmin) {
+      const userSubscriptions = await Subscription.find({
+        user: req.user._id,
+        endDate: { $gte: new Date() }
       });
+      // 7-day trial window from user signup for JOB_SEARCH access
+      const createdAt = req.user?.createdAt ? new Date(req.user.createdAt).getTime() : null;
+      const now = Date.now();
+      const trialMillis = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const isWithinJobSearchTrial = createdAt ? (now - createdAt) < trialMillis : false;
+
+      const canSearchJobs = isWithinJobSearchTrial || userSubscriptions.some(sub => 
+        ['JOB_SEARCH', 'SERVICE_POST'].includes(sub.type)
+      );
+
+      if (!canSearchJobs) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Please subscribe to search jobs',
+          subscriptionRequired: true
+        });
+      }
     }
 
     const jobs = await Job.find()
@@ -109,22 +132,29 @@ exports.getAllJobs = async (req, res) => {
 
 exports.getJobById = async (req, res) => {
   try {
-    // Check if user has valid subscription for job search
-    const userSubscriptions = await Subscription.find({
-      user: req.user._id,
-      endDate: { $gte: new Date() }
-    });
-
-    const canSearchJobs = userSubscriptions.some(sub => 
-      ['JOB_SEARCH', 'SERVICE_POST'].includes(sub.type)
-    );
-
-    if (!canSearchJobs) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Please subscribe to search jobs',
-        subscriptionRequired: true
+    // Admins can access without subscription checks
+    if (!req.user.isAdmin) {
+      const userSubscriptions = await Subscription.find({
+        user: req.user._id,
+        endDate: { $gte: new Date() }
       });
+      // 7-day trial window from user signup for JOB_SEARCH access
+      const createdAt = req.user?.createdAt ? new Date(req.user.createdAt).getTime() : null;
+      const now = Date.now();
+      const trialMillis = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const isWithinJobSearchTrial = createdAt ? (now - createdAt) < trialMillis : false;
+
+      const canSearchJobs = isWithinJobSearchTrial || userSubscriptions.some(sub => 
+        ['JOB_SEARCH', 'SERVICE_POST'].includes(sub.type)
+      );
+
+      if (!canSearchJobs) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Please subscribe to search jobs',
+          subscriptionRequired: true
+        });
+      }
     }
 
     const job = await Job.findById(req.params.id)
@@ -157,7 +187,7 @@ exports.getJobById = async (req, res) => {
 
 exports.searchJobsByKeyword = async (req, res) => {
   try {
-    const { keyword } = req.query;
+    const { keyword, city, state, district, country, pincode } = req.query;
 
     if (!keyword || keyword.trim() === '') {
       return res.status(400).json({
@@ -166,44 +196,99 @@ exports.searchJobsByKeyword = async (req, res) => {
       });
     }
 
-    // Check if user has valid subscription for job search
-    const userSubscriptions = await Subscription.find({
-      user: req.user._id,
-      endDate: { $gte: new Date() }
-    });
-
-    const canSearchJobs = userSubscriptions.some(sub =>
-      ['JOB_SEARCH', 'SERVICE_POST'].includes(sub.type)
-    );
-
-    if (!canSearchJobs) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Please subscribe to search jobs',
-        subscriptionRequired: true
+    // Admins can search without subscription checks
+    if (!req.user.isAdmin) {
+      const userSubscriptions = await Subscription.find({
+        user: req.user._id,
+        endDate: { $gte: new Date() }
       });
+      // 7-day trial window from user signup for JOB_SEARCH access
+      const createdAt = req.user?.createdAt ? new Date(req.user.createdAt).getTime() : null;
+      const now = Date.now();
+      const trialMillis = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const isWithinJobSearchTrial = createdAt ? (now - createdAt) < trialMillis : false;
+
+      const canSearchJobs = isWithinJobSearchTrial || userSubscriptions.some(sub =>
+        ['JOB_SEARCH', 'SERVICE_POST'].includes(sub.type)
+      );
+
+      if (!canSearchJobs) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Please subscribe to search jobs',
+          subscriptionRequired: true
+        });
+      }
     }
 
-    // Find matching categories (like 'plumber')
+    // Tokenize keyword and build a combined regex for matching
+    const tokens = String(keyword).split(/[^\w]+/).filter(Boolean);
+    const combinedRegex = new RegExp(tokens.join('|'), 'i');
+
+    // Find matching categories (type = Job)
     const matchingCategories = await Category.find({
       type: 'Job',
-      name: new RegExp(keyword, 'i')
+      name: combinedRegex
     }).select('_id');
 
     const categoryIds = matchingCategories.map(cat => cat._id);
 
-    // Only search jobs that match the category
+    // Build location OR conditions using regex
+    const locationOr = [
+      { 'location.address': { $regex: combinedRegex } },
+      { 'location.city': { $regex: combinedRegex } },
+      { 'location.district': { $regex: combinedRegex } },
+      { 'location.state': { $regex: combinedRegex } },
+      { 'location.country': { $regex: combinedRegex } },
+    ];
+    const digitTokens = tokens.filter(t => /^(\d{4,})$/.test(t));
+    if (digitTokens.length > 0) {
+      locationOr.push({ 'location.pincode': { $in: digitTokens } });
+    }
+
+    // Search jobs by category or location text match
     const jobs = await Job.find({
-      categories: { $in: categoryIds }
+      $or: [
+        { categories: { $in: categoryIds } },
+        ...locationOr,
+      ]
     })
       .populate('categories')
       .populate('user', 'name email phone');
 
+    // Optional: rank results by proximity to user-provided location
+    const userLoc = {
+      city: typeof city === 'string' ? city : undefined,
+      state: typeof state === 'string' ? state : undefined,
+      district: typeof district === 'string' ? district : undefined,
+      country: typeof country === 'string' ? country : undefined,
+      pincode: typeof pincode === 'string' ? pincode : undefined,
+    };
+
+    const scoreJob = (job) => {
+      let score = 0;
+      // Category match boost
+      const jobCatIds = (job.categories || []).map(c => c?._id).filter(Boolean);
+      if (jobCatIds.some(id => String(categoryIds).includes(String(id)))) score += 3;
+      // Keyword in location boost
+      const locFields = [job.location?.address, job.location?.city, job.location?.district, job.location?.state, job.location?.country].filter(Boolean).join(' ');
+      if (combinedRegex.test(locFields)) score += 2;
+      // User location proximity
+      if (userLoc.pincode && job.location?.pincode === userLoc.pincode) score += 10;
+      if (userLoc.city && job.location?.city && job.location.city.toLowerCase() === userLoc.city.toLowerCase()) score += 8;
+      if (userLoc.district && job.location?.district && job.location.district.toLowerCase() === userLoc.district.toLowerCase()) score += 8;
+      if (userLoc.state && job.location?.state && job.location.state.toLowerCase() === userLoc.state.toLowerCase()) score += 5;
+      if (userLoc.country && job.location?.country && job.location.country.toLowerCase() === userLoc.country.toLowerCase()) score += 2;
+      return score;
+    };
+
+    const ranked = jobs.sort((a, b) => scoreJob(b) - scoreJob(a));
+
     res.status(200).json({
       status: 'success',
-      results: jobs.length,
+      results: ranked.length,
       data: {
-        jobs
+        jobs: ranked
       }
     });
   } catch (error) {
@@ -211,5 +296,212 @@ exports.searchJobsByKeyword = async (req, res) => {
       status: 'error',
       message: error.message
     });
+  }
+};
+
+// Update a job owned by the authenticated user
+exports.updateJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ status: 'error', message: 'Job not found' });
+    }
+    if (String(job.user) !== String(req.user._id)) {
+      return res.status(403).json({ status: 'error', message: 'Not authorized to update this job' });
+    }
+
+    const updates = {};
+
+    // Allow updating categories via categoriesIds array
+    const { categoriesIds, location, isCompanyPost, companyId } = req.body || {};
+
+    if (categoriesIds) {
+      if (!Array.isArray(categoriesIds) || categoriesIds.length === 0) {
+        return res.status(400).json({ status: 'error', message: 'At least one category is required' });
+      }
+      const categories = await Category.find({ _id: { $in: categoriesIds }, type: 'Job' });
+      if (categories.length !== categoriesIds.length) {
+        return res.status(400).json({ status: 'error', message: 'One or more categories are invalid or not of type Job' });
+      }
+      updates.categories = categoriesIds;
+    }
+
+    if (location) {
+      const { address, district, state, city, country, pincode } = location;
+      if (!address || !district || !state || !city || !country || !pincode) {
+        return res.status(400).json({ status: 'error', message: 'Full location (address, district, state, city, country, pincode) is required' });
+      }
+      updates.location = { address, district, state, city, country, pincode };
+    }
+
+    if (typeof isCompanyPost !== 'undefined') {
+      updates.isCompanyPost = Boolean(isCompanyPost);
+    }
+    if (typeof companyId !== 'undefined') {
+      updates.companyId = companyId || null;
+    }
+
+    Object.assign(job, updates);
+    await job.save();
+
+    const populated = await Job.findById(job._id)
+      .populate('categories')
+      .populate('user', 'name email phone');
+
+    return res.status(200).json({ status: 'success', data: { job: populated } });
+  } catch (error) {
+    return res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Search candidates (users) by their interested job categories
+exports.searchCandidatesByInterests = async (req, res) => {
+  try {
+    // Admins can access without subscription checks; others need JOB_SEARCH or SERVICE_POST
+    if (!req.user.isAdmin) {
+      const subs = await Subscription.find({
+        user: req.user._id,
+        endDate: { $gte: new Date() },
+      });
+      // 7-day trial window from user signup for JOB_SEARCH access
+      const createdAt = req.user?.createdAt ? new Date(req.user.createdAt).getTime() : null;
+      const now = Date.now();
+      const trialMillis = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const isWithinJobSearchTrial = createdAt ? (now - createdAt) < trialMillis : false;
+
+      const allowed = isWithinJobSearchTrial || subs.some((s) => ['JOB_SEARCH', 'SERVICE_POST'].includes(s.type));
+      if (!allowed) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Please subscribe to find candidates',
+          subscriptionRequired: true,
+        });
+      }
+    }
+
+    const { keyword, categoryIds } = req.query;
+
+    let searchCategoryIds = [];
+    if (keyword && String(keyword).trim() !== '') {
+      const tokens = String(keyword).split(/[^\w]+/).filter(Boolean);
+      const combinedRegex = new RegExp(tokens.join('|'), 'i');
+      const cats = await Category.find({ type: 'Job', name: combinedRegex }).select('_id');
+      searchCategoryIds = cats.map((c) => c._id);
+    } else if (categoryIds) {
+      const raw = Array.isArray(categoryIds) ? categoryIds : String(categoryIds).split(',');
+      const cats = await Category.find({ _id: { $in: raw }, type: 'Job' }).select('_id');
+      searchCategoryIds = cats.map((c) => c._id);
+    }
+
+    // If no filters provided, default to users who have any interests
+    const userQuery = searchCategoryIds.length > 0
+      ? { interestedJobCategories: { $in: searchCategoryIds } }
+      : { interestedJobCategories: { $exists: true, $ne: [] } };
+
+    const users = await User.find(userQuery)
+      .select('name email phone resumeUrl interestedJobCategories')
+      .populate('interestedJobCategories');
+
+    return res.status(200).json({
+      status: 'success',
+      results: users.length,
+      data: { candidates: users },
+    });
+  } catch (error) {
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// Delete a job owned by the authenticated user
+exports.deleteJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ status: 'error', message: 'Job not found' });
+    }
+    if (String(job.user) !== String(req.user._id)) {
+      return res.status(403).json({ status: 'error', message: 'Not authorized to delete this job' });
+    }
+
+    await job.deleteOne();
+    return res.status(204).json({ status: 'success', data: null });
+  } catch (error) {
+    return res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Get authenticated user's job interests (categories + optional resume URL)
+exports.getMyJobInterests = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('interestedJobCategories');
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+    res.status(200).json({
+      status: 'success',
+      data: {
+        interests: {
+          categories: user.interestedJobCategories || [],
+          resumeUrl: user.resumeUrl || ''
+        }
+      }
+    });
+  } catch (error) {
+    return res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Update authenticated user's job interests (requires JOB_SEARCH or SERVICE_POST subscription)
+exports.updateMyJobInterests = async (req, res) => {
+  try {
+    const subs = await Subscription.find({
+      user: req.user._id,
+      endDate: { $gte: new Date() }
+    });
+    const allowed = subs.some(s => ['JOB_SEARCH', 'SERVICE_POST'].includes(s.type));
+    if (!allowed && !req.user.isAdmin) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Please subscribe to update job interests',
+        subscriptionRequired: true
+      });
+    }
+
+    const { categoriesIds, resumeUrl } = req.body || {};
+
+    let categoryIdsToSave = undefined;
+    if (categoriesIds !== undefined) {
+      if (!Array.isArray(categoriesIds)) {
+        return res.status(400).json({ status: 'error', message: 'categoriesIds must be an array' });
+      }
+      if (categoriesIds.length > 0) {
+        const cats = await Category.find({ _id: { $in: categoriesIds }, type: 'Job' });
+        if (cats.length !== categoriesIds.length) {
+          return res.status(400).json({ status: 'error', message: 'One or more categories are invalid or not of type Job' });
+        }
+        categoryIdsToSave = categoriesIds;
+      } else {
+        categoryIdsToSave = [];
+      }
+    }
+
+    const updates = {};
+    if (categoryIdsToSave !== undefined) updates.interestedJobCategories = categoryIdsToSave;
+    if (resumeUrl !== undefined) updates.resumeUrl = String(resumeUrl || '');
+
+    const updated = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true })
+      .populate('interestedJobCategories');
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        interests: {
+          categories: updated.interestedJobCategories || [],
+          resumeUrl: updated.resumeUrl || ''
+        }
+      }
+    });
+  } catch (error) {
+    return res.status(400).json({ status: 'error', message: error.message });
   }
 };

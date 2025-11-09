@@ -47,6 +47,48 @@ exports.getAllGovernmentJobs = async (req, res) => {
   }
 };
 
+// Search government jobs by keyword and optional jobType filter
+exports.searchGovernmentJobs = async (req, res) => {
+  try {
+    const { keyword, jobType } = req.query;
+
+    const query = {};
+
+    // Filter by jobType if provided (string or comma-separated list)
+    if (jobType) {
+      const types = Array.isArray(jobType)
+        ? jobType
+        : String(jobType)
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean);
+      if (types.length > 0) {
+        query.jobType = { $in: types };
+      }
+    }
+
+    // Build text search across jobTitle and organizationName if keyword present
+    if (keyword && String(keyword).trim() !== '') {
+      const tokens = String(keyword).split(/[\W_]+/).filter(Boolean);
+      const combinedRegex = new RegExp(tokens.join('|'), 'i');
+      query.$or = [
+        { jobTitle: { $regex: combinedRegex } },
+        { organizationName: { $regex: combinedRegex } },
+      ];
+    }
+
+    const governmentJobs = await GovernmentJob.find(query).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      status: 'success',
+      results: governmentJobs.length,
+      data: { governmentJobs },
+    });
+  } catch (error) {
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 exports.getGovernmentJobById = async (req, res) => {
   try {
     const governmentJob = await GovernmentJob.findById(req.params.id);
