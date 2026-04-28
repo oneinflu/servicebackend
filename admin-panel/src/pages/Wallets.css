@@ -1,0 +1,60 @@
+.wallets-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.wallets-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-4);
+}
+
+.withdrawal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--ceramic);
+  gap: var(--space-3);
+}
+
+.w-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.w-user {
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
+.w-amount {
+  color: var(--green-accent);
+  font-weight: 700;
+}
+
+.status-tag {
+  font-size: 1.1rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.status-tag.requested { background: var(--gold-lightest); color: var(--gold); }
+.status-tag.approved { background: var(--green-light); color: var(--green-accent); }
+.status-tag.paid { background: var(--ceramic); color: var(--text-black-soft); }
+
+.txn-type {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.txn-type.credit { color: var(--green-accent); }
+.txn-type.debit { color: var(--red); }
+
+.text-green { color: var(--green-accent); font-weight: 600; }
+.text-red { color: var(--red); font-weight: 600; }

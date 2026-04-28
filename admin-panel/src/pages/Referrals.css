@@ -1,0 +1,103 @@
+.referrals-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.commission-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.commission-item {
+  background: var(--neutral-cool);
+  padding: var(--space-3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--ceramic);
+}
+
+.lvl-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-black-soft);
+  text-transform: uppercase;
+}
+
+.lvl-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--starbucks-green);
+}
+
+.payout-info {
+  margin-top: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fdf8ed;
+  padding: 12px;
+  border-radius: 6px;
+  color: #856404;
+  font-size: 1.4rem;
+  border-left: 4px solid var(--gold);
+}
+
+/* Modal specific for 10 levels */
+.sb-modal.large {
+  max-width: 700px;
+}
+
+.modal-scroll-area {
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 12px;
+  margin: var(--space-4) 0;
+}
+
+.levels-config {
+  margin-top: var(--space-4);
+}
+
+.levels-config h4 {
+  margin-bottom: var(--space-3);
+}
+
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.level-input-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--neutral-cool);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--ceramic);
+}
+
+.level-input-box label {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.level-input-box input {
+  width: 140px;
+  padding: 6px;
+  border: 1px solid var(--ceramic);
+  border-radius: 4px;
+  outline: none;
+  font-size: 1.3rem;
+  text-align: right;
+}
+
+.level-input-box input:focus {
+  border-color: var(--green-accent);
+}

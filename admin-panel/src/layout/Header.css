@@ -1,0 +1,117 @@
+.sb-header {
+  height: 80px;
+  background-color: var(--white);
+  padding: 0 var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-nav);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.sb-header__title {
+  font-size: 2.4rem;
+  color: var(--house-green);
+  margin: 0;
+}
+
+.sb-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.sb-search-bar {
+  display: flex;
+  align-items: center;
+  background-color: var(--neutral-cool);
+  padding: 0.8rem 1.6rem;
+  border-radius: var(--radius-pill);
+  width: 300px;
+  border: 1px solid var(--ceramic);
+}
+
+.sb-search-icon {
+  color: var(--text-black-soft);
+  margin-right: var(--space-2);
+}
+
+.sb-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1.4rem;
+  width: 100%;
+}
+
+.sb-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sb-icon-button {
+  background: transparent;
+  border: none;
+  color: var(--text-black-soft);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: var(--radius-circle);
+  transition: all 0.2s ease;
+}
+
+.sb-icon-button:hover {
+  background-color: var(--neutral-cool);
+  color: var(--green-accent);
+}
+
+.sb-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--gold);
+  border-radius: 50%;
+  border: 2px solid var(--white);
+}
+
+.sb-user-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--ceramic);
+}
+
+.sb-avatar {
+  width: 36px;
+  height: 36px;
+  background-color: var(--green-light);
+  border-radius: var(--radius-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-accent);
+}
+
+.sb-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-username {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-black);
+}
+
+.sb-userrole {
+  font-size: 1.2rem;
+  color: var(--text-black-soft);
+}

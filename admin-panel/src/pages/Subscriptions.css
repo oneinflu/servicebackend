@@ -1,0 +1,27 @@
+.subscriptions-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.plan-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  width: fit-content;
+}
+
+.plan-badge.SERVICE_POST { background: var(--green-light); color: var(--starbucks-green); }
+.plan-badge.JOB_SEARCH { background: var(--gold-lightest); color: var(--gold); }
+
+.status-pill {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.status-pill.active { color: var(--green-accent); }
+.status-pill.expired { color: var(--red); }

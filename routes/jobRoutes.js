@@ -1,5 +1,5 @@
 const express = require('express');
-const { createJob, getAllJobs, getJobById, getMyJobs, searchJobsByKeyword, getMyJobInterests, updateMyJobInterests, updateJob, deleteJob, searchCandidatesByInterests } = require('../controllers/jobController');
+const { createJob, getAllJobs, getJobById, getMyJobs, searchJobsByKeyword, getMyJobInterests, updateMyJobInterests, updateJob, deleteJob, searchCandidatesByInterests, cloneJob } = require('../controllers/jobController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -15,6 +15,7 @@ router.get('/', protect, getAllJobs);
 router.get('/search', protect, searchJobsByKeyword);
 router.get('/candidates/search', protect, searchCandidatesByInterests);
 router.get('/:id', protect, getJobById);
+router.post('/:id/clone', protect, cloneJob);
 router.put('/:id', protect, updateJob);
 router.delete('/:id', protect, deleteJob);
 

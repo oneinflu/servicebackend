@@ -111,7 +111,7 @@ exports.getAllJobs = async (req, res) => {
       }
     }
 
-    const jobs = await Job.find()
+    const jobs = await Job.find({ expiresAt: { $gte: new Date() }, status: 'active' })
       .populate('categories')
       .populate('user', 'name email phone');
 
@@ -246,8 +246,9 @@ exports.searchJobsByKeyword = async (req, res) => {
       locationOr.push({ 'location.pincode': { $in: digitTokens } });
     }
 
-    // Search jobs by category or location text match
     const jobs = await Job.find({
+      expiresAt: { $gte: new Date() },
+      status: 'active',
       $or: [
         { categories: { $in: categoryIds } },
         ...locationOr,
@@ -503,5 +504,49 @@ exports.updateMyJobInterests = async (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Clone an expired or active job and create a new one
+exports.cloneJob = async (req, res) => {
+  try {
+    const oldJob = await Job.findById(req.params.id);
+    if (!oldJob) {
+      return res.status(404).json({ status: 'error', message: 'Job not found' });
+    }
+    if (String(oldJob.user) !== String(req.user._id)) {
+      return res.status(403).json({ status: 'error', message: 'Not authorized to clone this job' });
+    }
+
+    // Mark old job as expired if it isn't already
+    oldJob.status = 'expired';
+    await oldJob.save();
+
+    const newJobData = oldJob.toObject();
+    delete newJobData._id;
+    delete newJobData.createdAt;
+    delete newJobData.updatedAt;
+    delete newJobData.__v;
+
+    newJobData.status = 'active';
+    newJobData.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const newJob = await Job.create(newJobData);
+
+    const populated = await Job.findById(newJob._id)
+      .populate('categories')
+      .populate('user', 'name email phone');
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        job: populated
+      }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
   }
 };

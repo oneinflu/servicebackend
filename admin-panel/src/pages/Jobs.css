@@ -1,0 +1,44 @@
+.jobs-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.full-width-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.provider-cell, .location-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.4rem;
+  color: var(--text-black);
+}
+
+.company-badge {
+  font-size: 1rem;
+  background-color: var(--gold-lightest);
+  color: var(--gold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: 700;
+}
+
+.date-info {
+  font-size: 1.3rem;
+  color: var(--text-black-soft);
+}
+
+.action-btns {
+  display: flex;
+  gap: 8px;
+}

@@ -1,0 +1,44 @@
+.govt-jobs-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.job-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.job-title-cell b {
+  font-size: 1.5rem;
+  color: var(--house-green);
+}
+
+.apply-link-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.1rem;
+  color: var(--green-accent);
+  width: fit-content;
+}
+
+.apply-link-mini:hover {
+  text-decoration: underline;
+}
+
+.org-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.4rem;
+}
+
+.date-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.3rem;
+  color: var(--text-black-soft);
+}

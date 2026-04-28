@@ -1,0 +1,28 @@
+.sb-card {
+  background-color: var(--white);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.sb-card__header {
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--ceramic);
+  padding-bottom: var(--space-2);
+}
+
+.sb-card__title {
+  color: var(--starbucks-green);
+  font-size: 2rem;
+  margin-bottom: var(--space-1);
+}
+
+.sb-card__subtitle {
+  color: var(--text-black-soft);
+  font-size: 1.4rem;
+}
+
+.sb-card__content {
+  color: var(--text-black);
+}

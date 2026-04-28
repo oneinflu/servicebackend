@@ -1,0 +1,346 @@
+:root {
+  /* Colors - Starbucks Five-tier Green System */
+  --starbucks-green: #006241;
+  --green-accent: #00754a;
+  --house-green: #1e3932;
+  --green-uplift: #2b5148;
+  --green-light: #d4e9e2;
+  --green-light-33: rgba(212, 233, 226, 0.33);
+
+  /* Secondary & Gold */
+  --gold: #cba258;
+  --gold-light: #dfc49d;
+  --gold-lightest: #faf6ee;
+
+  /* Surfaces */
+  --white: #ffffff;
+  --neutral-cool: #f9f9f9;
+  --neutral-warm: #f2f0eb;
+  --ceramic: #edebe9;
+  --black: #000000;
+
+  /* Text Colors */
+  --text-black: rgba(0, 0, 0, 0.87);
+  --text-black-soft: rgba(0, 0, 0, 0.58);
+  --text-white: rgba(255, 255, 255, 1);
+  --text-white-soft: rgba(255, 255, 255, 0.70);
+  --rewards-green: #33433d;
+
+  /* Semantic */
+  --red: #c82014;
+  --red-tint: hsla(4, 82%, 43%, 0.05);
+
+  /* Spacing */
+  --space-1: 0.4rem;
+  --space-2: 0.8rem;
+  --space-3: 1.6rem;
+  --space-4: 2.4rem;
+  --space-5: 3.2rem;
+  --space-6: 4.0rem;
+  --space-7: 4.8rem;
+  --space-8: 5.6rem;
+  --space-9: 6.4rem;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-pill: 50px;
+  --radius-circle: 50%;
+
+  /* Shadows */
+  --shadow-card: 0px 0px 0.5px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 1px 0px rgba(0, 0, 0, 0.24);
+  --shadow-nav: 0 1px 3px rgba(0, 0, 0, 0.1), 0 2px 2px rgba(0, 0, 0, 0.06),
+    0 0 2px rgba(0, 0, 0, 0.07);
+  --shadow-frap: 0 0 6px rgba(0, 0, 0, 0.24), 0 8px 12px rgba(0, 0, 0, 0.14);
+
+  /* Typography */
+  --font-main: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: "Lora", Georgia, serif;
+  --font-script: "Kalam", cursive;
+  
+  --letter-spacing-normal: -0.01em;
+  --letter-spacing-loose: 0.1em;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 62.5%; /* 1rem = 10px */
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--neutral-warm);
+  color: var(--text-black);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 1.6rem;
+  letter-spacing: var(--letter-spacing-normal);
+  line-height: 1.5;
+}
+
+/* Typography styles */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--starbucks-green);
+  font-weight: 600;
+  letter-spacing: -0.16px;
+}
+
+h1 { font-size: 2.4rem; line-height: 3.6rem; }
+h2 { font-size: 2.4rem; font-weight: 400; color: var(--text-black); }
+
+a {
+  color: var(--green-accent);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+/* Layout Utilities */
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: var(--space-6);
+  background-color: var(--neutral-warm);
+}
+
+/* Global Transitions */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Starbucks Table System */
+.sb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.4rem;
+}
+
+.sb-table th {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--ceramic);
+  color: var(--house-green);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+}
+
+.sb-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--ceramic);
+  vertical-align: middle;
+}
+
+.sb-table tr:hover {
+  background-color: var(--neutral-cool);
+}
+
+/* Badges & Pills */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.type-badge.service { background-color: var(--green-light); color: var(--starbucks-green); }
+.type-badge.job { background-color: var(--ceramic); color: var(--text-black-soft); }
+
+/* Common UI Elements */
+.page-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-5);
+  gap: var(--space-4);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--ceramic);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  padding: 1rem;
+  width: 100%;
+  outline: none;
+  font-size: 1.4rem;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: var(--radius-circle);
+  color: var(--text-black-soft);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover { background: var(--ceramic); color: var(--house-green); }
+.icon-btn.delete:hover { background: var(--red-tint); color: var(--red); }
+
+/* Modal Global Styles */
+.sb-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.sb-modal {
+  width: 100%;
+  max-width: 500px;
+  padding: var(--space-6) !important;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sb-modal h2 {
+  margin-bottom: var(--space-2);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sb-select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--ceramic);
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  font-size: 1.4rem;
+  outline: none;
+  cursor: pointer;
+  color: var(--text-black);
+}
+
+.sb-select:focus {
+  border-color: var(--green-accent);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* Premium Placeholder & Loader */
+.placeholder-container {
+  height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.placeholder-card {
+  background: var(--white);
+  padding: var(--space-9);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.placeholder-card h2 {
+  color: var(--house-green);
+  font-size: 2.8rem;
+}
+
+.placeholder-card p {
+  color: var(--text-black-soft);
+  font-size: 1.6rem;
+}
+
+.brew-loader {
+  width: 64px;
+  height: 64px;
+  border: 4px solid var(--ceramic);
+  border-top: 4px solid var(--starbucks-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-4);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--neutral-warm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ceramic);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-light);
+}

@@ -45,6 +45,15 @@ const jobSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'User is required']
+  },
+  status: {
+    type: String,
+    enum: ['active', 'expired'],
+    default: 'active'
+  },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(+new Date() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
   }
 }, {
   timestamps: true

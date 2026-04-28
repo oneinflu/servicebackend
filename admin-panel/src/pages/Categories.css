@@ -1,0 +1,86 @@
+.categories-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.category-toggle {
+  display: flex;
+  background: var(--ceramic);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  gap: 4px;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-black-soft);
+  font-weight: 600;
+  font-size: 1.4rem;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: var(--white);
+  color: var(--starbucks-green);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.search-and-add {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.dim-text {
+  color: var(--text-black-soft);
+  font-size: 1.2rem;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.action-btns.end {
+  justify-content: flex-end;
+}
+
+/* Radio buttons styling */
+.radio-group {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  accent-color: var(--starbucks-green);
+  width: 18px;
+  height: 18px;
+}
+
+.sb-label-static {
+  display: block;
+  font-weight: 600;
+  color: var(--text-black-soft);
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
