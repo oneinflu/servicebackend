@@ -91,6 +91,10 @@ export const walletAPI = {
   updateBalance: (id, data) => api.put(`/wallet/${id}`, data),
 };
 
+export const paymentAPI = {
+  getAllTransactions: () => api.get('/payments/all-transactions'),
+};
+
 export const referralAPI = {
   getAll: () => api.get('/referrals'),
 };

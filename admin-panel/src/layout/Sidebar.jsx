@@ -56,7 +56,13 @@ const Sidebar = () => {
       </nav>
 
       <div className="sb-sidebar__footer">
-        <button className="sb-sidebar__logout">
+        <button 
+          className="sb-sidebar__logout"
+          onClick={() => {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/login';
+          }}
+        >
           <LogOut size={20} />
           <span>Logout</span>
         </button>

@@ -1,11 +1,11 @@
 :root {
-  /* Colors - Starbucks Five-tier Green System */
-  --starbucks-green: #006241;
-  --green-accent: #00754a;
-  --house-green: #1e3932;
-  --green-uplift: #2b5148;
-  --green-light: #d4e9e2;
-  --green-light-33: rgba(212, 233, 226, 0.33);
+  /* Colors - Navy Royal Blue System */
+  --starbucks-green: #002366; /* Deep Navy */
+  --green-accent: #0047AB; /* Royal Blue */
+  --house-green: #001A4D; /* Midnight Navy */
+  --green-uplift: #1A3399; /* Vibrant Royal */
+  --green-light: #E6F0FF; /* Soft Azure */
+  --green-light-33: rgba(230, 240, 255, 0.33);
 
   /* Secondary & Gold */
   --gold: #cba258;
