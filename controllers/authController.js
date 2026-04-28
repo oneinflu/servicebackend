@@ -9,7 +9,10 @@ const generateToken = (id) => {
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, phone, password, referredBy } = req.body;
+    const { name, email, phone, password, referredBy, referral_code } = req.body;
+    
+    // Map referral_code to referredBy for frontend compatibility
+    const referralCode = referral_code || referredBy;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -24,7 +27,7 @@ exports.register = async (req, res) => {
     const randomString = Math.random().toString(36).substring(2, 8);
     const referralId = `${name.substring(0, 3)}${randomString}`.toUpperCase();
 
-    // Create new user with referral ID
+    // Create new user data object
     const userData = {
       name,
       email,
@@ -33,21 +36,24 @@ exports.register = async (req, res) => {
       referralId
     };
 
-    // If referredBy is provided, verify and add it
-    if (referredBy) {
-      const referrer = await User.findOne({ referralId: referredBy });
+    // If referral code is provided, verify it
+    let referrer = null;
+    if (referralCode) {
+      referrer = await User.findOne({ referralId: referralCode });
       if (referrer) {
         userData.referredBy = referrer._id;
-        
-        // Update referrer's stats
-        await User.findByIdAndUpdate(referrer._id, {
-          $inc: { referralCount: 1 },
-          $push: { referredUsers: userData._id }
-        });
       }
     }
 
     const user = await User.create(userData);
+
+    // If there's a referrer, update their stats with the new user's actual ID
+    if (referrer) {
+      await User.findByIdAndUpdate(referrer._id, {
+        $inc: { referralCount: 1 },
+        $push: { referredUsers: user._id }
+      });
+    }
 
     // Generate token
     const token = generateToken(user._id);
