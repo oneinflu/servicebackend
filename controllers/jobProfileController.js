@@ -3,7 +3,7 @@ const Category = require('../models/Category');
 
 exports.createOrUpdateProfile = async (req, res) => {
   try {
-    const { categories, title, experience, expectedSalary, about, location, resumeUrl, isActive } = req.body;
+    const { categories, location, isActive } = req.body;
 
     if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return res.status(400).json({ status: 'error', message: 'At least one category is required' });
@@ -14,18 +14,13 @@ exports.createOrUpdateProfile = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'One or more categories are invalid or not of type Job' });
     }
 
-    if (!location || !location.address || !location.city || !location.district || !location.state || !location.country || !location.pincode) {
-      return res.status(400).json({ status: 'error', message: 'Full location is required' });
+    if (!location || !location.city || !location.district || !location.state || !location.country || !location.pincode) {
+      return res.status(400).json({ status: 'error', message: 'City, district, state, country, and pincode are required for location' });
     }
 
     const profileData = {
       categories,
-      title,
-      experience,
-      expectedSalary,
-      about,
       location,
-      resumeUrl,
       isActive: isActive !== undefined ? isActive : true
     };
 
@@ -77,8 +72,6 @@ exports.searchJobProfiles = async (req, res) => {
       
       query.$or = [
         { categories: { $in: catIds } },
-        { title: searchRegex },
-        { about: searchRegex },
         { 'location.city': searchRegex },
         { 'location.state': searchRegex },
         { 'location.district': searchRegex }
