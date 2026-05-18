@@ -392,34 +392,39 @@ exports.updateService = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Not authorized to update this service' });
     }
 
-    const { categoryPrices, location, locality } = req.body;
-    if (!categoryPrices || !Array.isArray(categoryPrices) || categoryPrices.length === 0) {
-      return res.status(400).json({ status: 'error', message: 'At least one category with price is required' });
-    }
-    const categoriesIds = categoryPrices.map(item => item.category);
-    const categories = await Category.find({ _id: { $in: categoriesIds }, type: 'Service' });
-    if (categories.length !== categoriesIds.length) {
-      return res.status(400).json({ status: 'error', message: 'One or more categories are invalid or not of type Service' });
+    const { categoryPrices, location, locality, isCompanyPost, companyId } = req.body;
+
+    // Update categoryPrices only if provided
+    if (categoryPrices !== undefined) {
+      if (!Array.isArray(categoryPrices) || categoryPrices.length === 0) {
+        return res.status(400).json({ status: 'error', message: 'At least one category with price is required' });
+      }
+      const categoriesIds = categoryPrices.map(item => item.category);
+      const categories = await Category.find({ _id: { $in: categoriesIds }, type: 'Service' });
+      if (categories.length !== categoriesIds.length) {
+        return res.status(400).json({ status: 'error', message: 'One or more categories are invalid or not of type Service' });
+      }
+
+      // Enforce subscription rule for multiple categories
+      const userSubscriptions = await Subscription.find({ user: req.user._id, endDate: { $gte: new Date() } });
+      const hasPostSub = userSubscriptions.some(sub => sub.type === 'SERVICE_POST');
+      if (!hasPostSub && categoriesIds.length > 1) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Multiple categories require a Service Post subscription',
+          subscriptionRequired: true,
+          subscriptionType: 'SERVICE_POST'
+        });
+      }
+
+      service.categoryPrices = categoryPrices;
+      service.categories = categoriesIds;
     }
 
-    // Enforce subscription rule for multiple categories
-    const userSubscriptions = await Subscription.find({ user: req.user._id, endDate: { $gte: new Date() } });
-    const hasPostSub = userSubscriptions.some(sub => sub.type === 'SERVICE_POST');
-    if (!hasPostSub && categoriesIds.length > 1) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Multiple categories require a Service Post subscription',
-        subscriptionRequired: true,
-        subscriptionType: 'SERVICE_POST'
-      });
-    }
-
-    service.categoryPrices = categoryPrices;
-    service.categories = categoriesIds;
-
+    // Update location if locality or location is provided
     let serviceLocation = location;
-    if (locality) {
-      const resolved = await resolveLocality(locality);
+    if (locality && locality.trim() !== '') {
+      const resolved = await resolveLocality(locality.trim());
       serviceLocation = {
         address: resolved.locality,
         city: resolved.city,
@@ -430,7 +435,7 @@ exports.updateService = async (req, res) => {
         pincode: resolved.pincode
       };
     } else if (location && location.address && !location.city) {
-      const resolved = await resolveLocality(location.address);
+      const resolved = await resolveLocality(location.address.trim());
       serviceLocation = {
         address: resolved.locality,
         city: resolved.city,
@@ -449,6 +454,14 @@ exports.updateService = async (req, res) => {
       }
       service.location = { address, district, state, city, country, pincode, taluk: taluk || '' };
     }
+
+    if (typeof isCompanyPost !== 'undefined') {
+      service.isCompanyPost = Boolean(isCompanyPost);
+    }
+    if (typeof companyId !== 'undefined') {
+      service.companyId = companyId || null;
+    }
+
     const updated = await service.save();
 
     const populated = await Service.findById(updated._id)
