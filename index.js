@@ -17,6 +17,7 @@ const usageRoutes = require('./routes/usageRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const referralRoutes = require('./routes/referralRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+const locationRoutes = require('./routes/locationRoutes');
 const app = express();
 
 // Middleware
@@ -55,6 +56,7 @@ app.use('/api/usage', usageRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/location', locationRoutes);
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))

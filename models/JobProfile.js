@@ -15,6 +15,7 @@ const jobProfileSchema = new mongoose.Schema({
   location: {
     address: { type: String },
     city: { type: String, required: true },
+    taluk: { type: String, default: '' },
     district: { type: String, required: true },
     state: { type: String, required: true },
     country: { type: String, required: true },

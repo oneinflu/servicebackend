@@ -30,6 +30,10 @@ const serviceSchema = new mongoose.Schema({
       type: String,
       required: [true, 'City is required']
     },
+    taluk: {
+      type: String,
+      default: ''
+    },
     pincode: {
       type: String,
       required: [true, 'Pincode is required']

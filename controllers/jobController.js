@@ -2,10 +2,11 @@ const Job = require('../models/Job');
 const Category = require('../models/Category');
 const Subscription = require('../models/Subscription');
 const User = require('../models/User');
+const { resolveLocality } = require('../lib/locationService');
 
 exports.createJob = async (req, res) => {
   try {
-    const { categoriesIds, location, isCompanyPost, companyId } = req.body;
+    const { categoriesIds, location, isCompanyPost, companyId, locality } = req.body;
 
     // Verify categories exist and are of type 'Job'
     if (!categoriesIds || !Array.isArray(categoriesIds) || categoriesIds.length === 0) {
@@ -28,8 +29,33 @@ exports.createJob = async (req, res) => {
       });
     }
 
+    let jobLocation = location;
+    if (locality) {
+      const resolved = await resolveLocality(locality);
+      jobLocation = {
+        address: resolved.locality,
+        city: resolved.city,
+        taluk: resolved.taluk,
+        district: resolved.district,
+        state: resolved.state,
+        country: resolved.country,
+        pincode: resolved.pincode
+      };
+    } else if (location && location.address && !location.city) {
+      const resolved = await resolveLocality(location.address);
+      jobLocation = {
+        address: resolved.locality,
+        city: resolved.city,
+        taluk: resolved.taluk,
+        district: resolved.district,
+        state: resolved.state,
+        country: resolved.country,
+        pincode: resolved.pincode
+      };
+    }
+
     // Validate full location including address
-    if (!location || !location.address || !location.district || !location.state || !location.city || !location.country || !location.pincode) {
+    if (!jobLocation || !jobLocation.address || !jobLocation.district || !jobLocation.state || !jobLocation.city || !jobLocation.country || !jobLocation.pincode) {
       return res.status(400).json({
         status: 'error',
         message: 'Full location is required (address, district, state, city, country, pincode)'
@@ -39,12 +65,13 @@ exports.createJob = async (req, res) => {
     const job = await Job.create({
       categories: categoriesIds,
       location: {
-        address: location.address,
-        district: location.district,
-        state: location.state,
-        city: location.city,
-        country: location.country,
-        pincode: location.pincode,
+        address: jobLocation.address,
+        district: jobLocation.district,
+        state: jobLocation.state,
+        city: jobLocation.city,
+        taluk: jobLocation.taluk || '',
+        country: jobLocation.country,
+        pincode: jobLocation.pincode,
       },
       isCompanyPost: isCompanyPost || false,
       companyId: companyId || null,
@@ -187,12 +214,21 @@ exports.getJobById = async (req, res) => {
 
 exports.searchJobsByKeyword = async (req, res) => {
   try {
-    const { keyword, city, state, district, country, pincode } = req.query;
+    const { keyword, city, state, district, country, pincode, taluk, locality } = req.query;
 
-    if (!keyword || keyword.trim() === '') {
+    if (
+      (!keyword || keyword.trim() === '') &&
+      (!city || city.trim() === '') &&
+      (!state || state.trim() === '') &&
+      (!district || district.trim() === '') &&
+      (!country || country.trim() === '') &&
+      (!pincode || pincode.trim() === '') &&
+      (!taluk || taluk.trim() === '') &&
+      (!locality || locality.trim() === '')
+    ) {
       return res.status(400).json({
         status: 'error',
-        message: 'Keyword is required for job search'
+        message: 'A search keyword or location filter is required'
       });
     }
 
@@ -221,39 +257,71 @@ exports.searchJobsByKeyword = async (req, res) => {
       }
     }
 
-    // Tokenize keyword and build a combined regex for matching
-    const tokens = String(keyword).split(/[^\w]+/).filter(Boolean);
-    const combinedRegex = new RegExp(tokens.join('|'), 'i');
-
-    // Find matching categories (type = Job)
-    const matchingCategories = await Category.find({
-      type: 'Job',
-      name: combinedRegex
-    }).select('_id');
-
-    const categoryIds = matchingCategories.map(cat => cat._id);
-
-    // Build location OR conditions using regex
-    const locationOr = [
-      { 'location.address': { $regex: combinedRegex } },
-      { 'location.city': { $regex: combinedRegex } },
-      { 'location.district': { $regex: combinedRegex } },
-      { 'location.state': { $regex: combinedRegex } },
-      { 'location.country': { $regex: combinedRegex } },
-    ];
-    const digitTokens = tokens.filter(t => /^(\d{4,})$/.test(t));
-    if (digitTokens.length > 0) {
-      locationOr.push({ 'location.pincode': { $in: digitTokens } });
-    }
-
-    const jobs = await Job.find({
+    const findQuery = {
       expiresAt: { $gte: new Date() },
-      status: 'active',
-      $or: [
+      status: 'active'
+    };
+
+    let categoryIds = [];
+    let combinedRegex = null;
+
+    if (keyword && keyword.trim() !== '') {
+      // Tokenize keyword and build a combined regex for matching
+      const tokens = String(keyword).split(/[^\w]+/).filter(Boolean);
+      combinedRegex = new RegExp(tokens.join('|'), 'i');
+
+      // Find matching categories (type = Job)
+      const matchingCategories = await Category.find({
+        type: 'Job',
+        name: combinedRegex
+      }).select('_id');
+
+      categoryIds = matchingCategories.map(cat => cat._id);
+
+      // Build location OR conditions using regex
+      const locationOr = [
+        { 'location.address': { $regex: combinedRegex } },
+        { 'location.city': { $regex: combinedRegex } },
+        { 'location.taluk': { $regex: combinedRegex } },
+        { 'location.district': { $regex: combinedRegex } },
+        { 'location.state': { $regex: combinedRegex } },
+        { 'location.country': { $regex: combinedRegex } },
+      ];
+      const digitTokens = tokens.filter(t => /^(\d{4,})$/.test(t));
+      if (digitTokens.length > 0) {
+        locationOr.push({ 'location.pincode': { $in: digitTokens } });
+      }
+
+      findQuery.$or = [
         { categories: { $in: categoryIds } },
         ...locationOr,
-      ]
-    })
+      ];
+    }
+
+    // Add strict location filters if explicitly provided in query parameters
+    if (city && city.trim() !== '') {
+      findQuery['location.city'] = new RegExp(city.trim(), 'i');
+    }
+    if (state && state.trim() !== '') {
+      findQuery['location.state'] = new RegExp(state.trim(), 'i');
+    }
+    if (district && district.trim() !== '') {
+      findQuery['location.district'] = new RegExp(district.trim(), 'i');
+    }
+    if (country && country.trim() !== '') {
+      findQuery['location.country'] = new RegExp(country.trim(), 'i');
+    }
+    if (pincode && pincode.trim() !== '') {
+      findQuery['location.pincode'] = pincode.trim();
+    }
+    if (taluk && taluk.trim() !== '') {
+      findQuery['location.taluk'] = new RegExp(taluk.trim(), 'i');
+    }
+    if (locality && locality.trim() !== '') {
+      findQuery['location.address'] = new RegExp(locality.trim(), 'i');
+    }
+
+    const jobs = await Job.find(findQuery)
       .populate('categories')
       .populate('user', 'name email phone');
 
@@ -264,19 +332,27 @@ exports.searchJobsByKeyword = async (req, res) => {
       district: typeof district === 'string' ? district : undefined,
       country: typeof country === 'string' ? country : undefined,
       pincode: typeof pincode === 'string' ? pincode : undefined,
+      taluk: typeof taluk === 'string' ? taluk : undefined,
+      locality: typeof locality === 'string' ? locality : undefined,
     };
 
     const scoreJob = (job) => {
       let score = 0;
       // Category match boost
       const jobCatIds = (job.categories || []).map(c => c?._id).filter(Boolean);
-      if (jobCatIds.some(id => String(categoryIds).includes(String(id)))) score += 3;
+      if (categoryIds.length > 0 && jobCatIds.some(id => String(categoryIds).includes(String(id)))) score += 3;
+      
       // Keyword in location boost
-      const locFields = [job.location?.address, job.location?.city, job.location?.district, job.location?.state, job.location?.country].filter(Boolean).join(' ');
-      if (combinedRegex.test(locFields)) score += 2;
+      if (combinedRegex) {
+        const locFields = [job.location?.address, job.location?.city, job.location?.taluk, job.location?.district, job.location?.state, job.location?.country].filter(Boolean).join(' ');
+        if (combinedRegex.test(locFields)) score += 2;
+      }
+
       // User location proximity
       if (userLoc.pincode && job.location?.pincode === userLoc.pincode) score += 10;
+      if (userLoc.locality && job.location?.address && job.location.address.toLowerCase().includes(userLoc.locality.toLowerCase())) score += 10;
       if (userLoc.city && job.location?.city && job.location.city.toLowerCase() === userLoc.city.toLowerCase()) score += 8;
+      if (userLoc.taluk && job.location?.taluk && job.location.taluk.toLowerCase() === userLoc.taluk.toLowerCase()) score += 8;
       if (userLoc.district && job.location?.district && job.location.district.toLowerCase() === userLoc.district.toLowerCase()) score += 8;
       if (userLoc.state && job.location?.state && job.location.state.toLowerCase() === userLoc.state.toLowerCase()) score += 5;
       if (userLoc.country && job.location?.country && job.location.country.toLowerCase() === userLoc.country.toLowerCase()) score += 2;
@@ -314,7 +390,7 @@ exports.updateJob = async (req, res) => {
     const updates = {};
 
     // Allow updating categories via categoriesIds array
-    const { categoriesIds, location, isCompanyPost, companyId } = req.body || {};
+    const { categoriesIds, location, isCompanyPost, companyId, locality } = req.body || {};
 
     if (categoriesIds) {
       if (!Array.isArray(categoriesIds) || categoriesIds.length === 0) {
@@ -327,12 +403,37 @@ exports.updateJob = async (req, res) => {
       updates.categories = categoriesIds;
     }
 
-    if (location) {
-      const { address, district, state, city, country, pincode } = location;
+    let jobLocation = location;
+    if (locality) {
+      const resolved = await resolveLocality(locality);
+      jobLocation = {
+        address: resolved.locality,
+        city: resolved.city,
+        taluk: resolved.taluk,
+        district: resolved.district,
+        state: resolved.state,
+        country: resolved.country,
+        pincode: resolved.pincode
+      };
+    } else if (location && location.address && !location.city) {
+      const resolved = await resolveLocality(location.address);
+      jobLocation = {
+        address: resolved.locality,
+        city: resolved.city,
+        taluk: resolved.taluk,
+        district: resolved.district,
+        state: resolved.state,
+        country: resolved.country,
+        pincode: resolved.pincode
+      };
+    }
+
+    if (jobLocation) {
+      const { address, district, state, city, country, pincode, taluk } = jobLocation;
       if (!address || !district || !state || !city || !country || !pincode) {
         return res.status(400).json({ status: 'error', message: 'Full location (address, district, state, city, country, pincode) is required' });
       }
-      updates.location = { address, district, state, city, country, pincode };
+      updates.location = { address, district, state, city, country, pincode, taluk: taluk || '' };
     }
 
     if (typeof isCompanyPost !== 'undefined') {

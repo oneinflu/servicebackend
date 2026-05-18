@@ -1,9 +1,10 @@
 const JobProfile = require('../models/JobProfile');
 const Category = require('../models/Category');
+const { resolveLocality } = require('../lib/locationService');
 
 exports.createOrUpdateProfile = async (req, res) => {
   try {
-    const { categories, location, isActive } = req.body;
+    const { categories, location, isActive, locality } = req.body;
 
     if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return res.status(400).json({ status: 'error', message: 'At least one category is required' });
@@ -14,13 +15,46 @@ exports.createOrUpdateProfile = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'One or more categories are invalid or not of type Job' });
     }
 
-    if (!location || !location.city || !location.district || !location.state || !location.country || !location.pincode) {
+    let profileLocation = location;
+    if (locality) {
+      const resolved = await resolveLocality(locality);
+      profileLocation = {
+        address: resolved.locality,
+        city: resolved.city,
+        taluk: resolved.taluk,
+        district: resolved.district,
+        state: resolved.state,
+        country: resolved.country,
+        pincode: resolved.pincode
+      };
+    } else if (location && location.address && !location.city) {
+      const resolved = await resolveLocality(location.address);
+      profileLocation = {
+        address: resolved.locality,
+        city: resolved.city,
+        taluk: resolved.taluk,
+        district: resolved.district,
+        state: resolved.state,
+        country: resolved.country,
+        pincode: resolved.pincode
+      };
+    }
+
+    if (!profileLocation || !profileLocation.city || !profileLocation.district || !profileLocation.state || !profileLocation.country || !profileLocation.pincode) {
       return res.status(400).json({ status: 'error', message: 'City, district, state, country, and pincode are required for location' });
     }
 
     const profileData = {
       categories,
-      location,
+      location: {
+        address: profileLocation.address || '',
+        city: profileLocation.city,
+        taluk: profileLocation.taluk || '',
+        district: profileLocation.district,
+        state: profileLocation.state,
+        country: profileLocation.country,
+        pincode: profileLocation.pincode
+      },
       isActive: isActive !== undefined ? isActive : true
     };
 
@@ -74,7 +108,8 @@ exports.searchJobProfiles = async (req, res) => {
         { categories: { $in: catIds } },
         { 'location.city': searchRegex },
         { 'location.state': searchRegex },
-        { 'location.district': searchRegex }
+        { 'location.district': searchRegex },
+        { 'location.taluk': searchRegex }
       ];
     }
 
