@@ -153,3 +153,70 @@ exports.getAllWalletTransactionsAdmin = async (req, res) => {
     res.status(400).json({ status: 'error', message: error.message });
   }
 };
+
+// Submit/update payout details (UPI ID & Bank Details)
+exports.updatePayoutDetails = async (req, res) => {
+  try {
+    const { upiId, bankDetails } = req.body;
+
+    const updates = {};
+    if (typeof upiId !== 'undefined') {
+      updates.upiId = String(upiId).trim();
+    }
+
+    if (bankDetails) {
+      updates.bankDetails = {
+        bankName: String(bankDetails.bankName || '').trim(),
+        accountNumber: String(bankDetails.accountNumber || '').trim(),
+        ifscCode: String(bankDetails.ifscCode || '').trim(),
+        accountHolderName: String(bankDetails.accountHolderName || '').trim(),
+      };
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('name email upiId bankDetails');
+
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Payout details updated successfully',
+      data: {
+        upiId: user.upiId,
+        bankDetails: user.bankDetails
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Retrieve user's payout details
+exports.getPayoutDetails = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('upiId bankDetails');
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        upiId: user.upiId || '',
+        bankDetails: user.bankDetails || {
+          bankName: '',
+          accountNumber: '',
+          ifscCode: '',
+          accountHolderName: ''
+        }
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
+  }
+};

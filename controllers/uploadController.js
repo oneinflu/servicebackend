@@ -70,4 +70,57 @@ const uploadResume = [
   },
 ];
 
-module.exports = { uploadResume };
+// Payout proof upload limits and filter
+const proofUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'application/pdf'
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type. Allowed: JPEG, PNG, PDF'));
+  },
+});
+
+// POST /api/uploads/proof
+// Protected: requires admin access
+const uploadPayoutProof = [
+  proofUpload.single('proof'),
+  async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ status: 'error', message: 'Not authenticated' });
+      }
+      if (!req.user.isAdmin) {
+        return res.status(403).json({ status: 'error', message: 'Access denied. Admins only.' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ status: 'error', message: 'No file uploaded. Use field name "proof".' });
+      }
+
+      // Stream to Cloudinary
+      const folder = 'payout_proofs';
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: 'auto', folder },
+        async (error, result) => {
+          if (error) {
+            return res.status(500).json({ status: 'error', message: error.message || 'Upload failed' });
+          }
+          const secureUrl = result.secure_url || result.url;
+          return res.json({ status: 'success', data: { url: secureUrl, public_id: result.public_id } });
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ status: 'error', message });
+    }
+  },
+];
+
+module.exports = { uploadResume, uploadPayoutProof };
