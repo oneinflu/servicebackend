@@ -1,14 +1,46 @@
 const Company = require('../models/Company');
 const User = require('../models/User');
+const { resolveLocality } = require('../lib/locationService');
+
+// Helper: build location from locality or full location object
+async function buildLocation(locality, location) {
+  if (locality && locality.trim() !== '') {
+    const resolved = await resolveLocality(locality.trim());
+    return {
+      address: resolved.locality,
+      city: resolved.city,
+      taluk: resolved.taluk,
+      district: resolved.district,
+      state: resolved.state,
+      country: resolved.country,
+      pincode: resolved.pincode
+    };
+  }
+  if (location && location.address && !location.city) {
+    const resolved = await resolveLocality(location.address.trim());
+    return {
+      address: resolved.locality,
+      city: resolved.city,
+      taluk: resolved.taluk,
+      district: resolved.district,
+      state: resolved.state,
+      country: resolved.country,
+      pincode: resolved.pincode
+    };
+  }
+  return location; // already a full object
+}
 
 // Create a new company
 exports.createCompany = async (req, res) => {
   try {
-    const { name, location, website, about, logo } = req.body;
+    const { name, location, locality, website, about, logo } = req.body;
+
+    const resolvedLocation = await buildLocation(locality, location);
 
     const company = await Company.create({
       name,
-      location,
+      location: resolvedLocation,
       website,
       about,
       logo,
@@ -106,16 +138,18 @@ exports.getMyCompanies = async (req, res) => {
 // Update company
 exports.updateCompany = async (req, res) => {
   try {
-    const { name, location, website, about, logo } = req.body;
+    const { name, location, locality, website, about, logo } = req.body;
 
     let company = await Company.findById(req.params.id);
     let isNewCompany = false;
+
+    const resolvedLocation = await buildLocation(locality, location);
 
     // If no company found and user doesn't have a company, create a new one
     if (!company && !req.user.company) {
       company = await Company.create({
         name,
-        location,
+        location: resolvedLocation,
         website,
         about,
         logo,
@@ -141,7 +175,7 @@ exports.updateCompany = async (req, res) => {
     if (!isNewCompany) {
       company = await Company.findByIdAndUpdate(
         req.params.id,
-        { name, location, website, about, logo },
+        { name, location: resolvedLocation, website, about, logo },
         { new: true, runValidators: true }
       );
     }

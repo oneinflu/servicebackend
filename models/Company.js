@@ -27,6 +27,11 @@ const companySchema = new mongoose.Schema({
       type: String,
       required: [true, 'District is required']
     },
+    taluk: {
+      type: String,
+      required: false,
+      default: ''
+    },
     pincode: {
       type: String,
       required: false
