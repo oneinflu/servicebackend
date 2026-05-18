@@ -486,7 +486,7 @@ exports.deleteService = async (req, res) => {
     }
 
     await Service.findByIdAndDelete(req.params.id);
-    return res.status(204).json({ status: 'success', data: null });
+    return res.status(200).json({ status: 'success', message: 'Service deleted successfully' });
   } catch (error) {
     return res.status(400).json({ status: 'error', message: error.message });
   }

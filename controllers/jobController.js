@@ -526,7 +526,7 @@ exports.deleteJob = async (req, res) => {
     }
 
     await job.deleteOne();
-    return res.status(204).json({ status: 'success', data: null });
+    return res.status(200).json({ status: 'success', message: 'Job deleted successfully' });
   } catch (error) {
     return res.status(400).json({ status: 'error', message: error.message });
   }
