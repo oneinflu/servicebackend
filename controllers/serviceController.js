@@ -158,13 +158,19 @@ exports.getAllServices = async (req, res) => {
 
     const services = await Service.find()
       .populate('categoryPrices.category')
+      .populate('companyId')
       .populate('user', 'name email phone');
+
+    const companyServices = services.filter(s => s.isCompanyPost === true);
+    const individualServices = services.filter(s => s.isCompanyPost !== true);
 
     res.status(200).json({
       status: 'success',
       results: services.length,
       data: {
-        services
+        services, // Backwards compatibility
+        companyServices,
+        individualServices
       }
     });
   } catch (error) {
@@ -199,6 +205,7 @@ exports.getServiceById = async (req, res) => {
 
     const service = await Service.findById(req.params.id)
       .populate('categoryPrices.category')
+      .populate('companyId')
       .populate('user', 'name email phone');
 
     if (!service) {

@@ -185,10 +185,9 @@ exports.getJobById = async (req, res) => {
     }
 
     const job = await Job.findById(req.params.id)
-      .populate('categories')  // Change to .populate('categories')
-
-    // In searchJobsByKeyword function (around line 208)
-    .populate('categories')  // Change to .populate('categories')
+      .populate('categories')
+      .populate('companyId')
+      .populate('user', 'name email phone');
 
     if (!job) {
       return res.status(404).json({
