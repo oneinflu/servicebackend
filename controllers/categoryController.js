@@ -32,7 +32,8 @@ exports.createCategories = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ status: 'approved' });
+    // Exclude only explicitly pending — existing docs without a status field are treated as approved
+    const categories = await Category.find({ status: { $ne: 'pending' } });
     res.status(200).json({ status: 'success', data: { categories } });
   } catch (error) {
     res.status(400).json({ status: 'error', message: error.message });
@@ -60,8 +61,8 @@ exports.getCategoriesByType = async (req, res) => {
       });
     }
 
-    // Public: only approved
-    const categories = await Category.find({ type, status: 'approved' });
+    // Exclude only explicitly pending — existing docs without a status field are treated as approved
+    const categories = await Category.find({ type, status: { $ne: 'pending' } });
 
     res.status(200).json({
       status: 'success',
