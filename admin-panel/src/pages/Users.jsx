@@ -57,10 +57,22 @@ const Users = () => {
     setIsModalOpen(false);
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone?.includes(searchTerm)
+  const handleDelete = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    try {
+      await authAPI.deleteUser(userId);
+      setUsers(prev => prev.filter(u => u._id !== userId));
+    } catch (err) {
+      alert('Failed to delete user: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const filteredUsers = users.filter(user =>
+    !user.isAdmin && (
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone?.includes(searchTerm)
+    )
   );
 
   return (
@@ -133,7 +145,7 @@ const Users = () => {
                       <button className="icon-btn edit" onClick={() => handleOpenModal(user)}>
                         <Edit2 size={16} />
                       </button>
-                      <button className="icon-btn delete">
+                      <button className="icon-btn delete" onClick={() => handleDelete(user._id)}>
                         <Trash2 size={16} />
                       </button>
                     </div>

@@ -203,6 +203,7 @@ exports.getProfile = async (req, res) => {
           referredBy: user.referredBy,
           referredUsers: user.referredUsers,
           company: user.company,
+          profilePicUrl: user.profilePicUrl,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
@@ -219,7 +220,7 @@ exports.getProfile = async (req, res) => {
 // Update authenticated user's basic profile fields
 exports.updateProfile = async (req, res) => {
   try {
-    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo'];
+    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo', 'profilePicUrl'];
     const updates = {};
     for (const key of allowedFields) {
       if (key in req.body) updates[key] = req.body[key];
@@ -255,6 +256,7 @@ exports.updateProfile = async (req, res) => {
           referredBy: updatedUser.referredBy,
           referredUsers: updatedUser.referredUsers,
           company: updatedUser.company,
+          profilePicUrl: updatedUser.profilePicUrl,
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt,
         }
@@ -279,12 +281,52 @@ exports.getAllUsers = async (req, res) => {
     }
 
     const users = await User.find()
-      .select('name email phone isAdmin referralId referralCount createdAt updatedAt');
+      .select('name email phone isAdmin referralId referralCount profilePicUrl createdAt updatedAt');
 
     res.status(200).json({
       status: 'success',
       results: users.length,
       data: { users }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Admin: delete a user by ID
+exports.deleteUser = async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied. Admins only.'
+      });
+    }
+
+    const { id } = req.params;
+
+    if (id === req.user._id.toString()) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cannot delete your own admin account'
+      });
+    }
+
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'User deleted successfully'
     });
   } catch (error) {
     res.status(400).json({

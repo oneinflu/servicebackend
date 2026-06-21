@@ -12,6 +12,15 @@ const categorySchema = new mongoose.Schema({
     required: [true, 'Category type is required'],
     enum: ['Service', 'Job'],
     trim: true
+  },
+  status: {
+    type: String,
+    enum: ['approved', 'pending'],
+    default: 'approved'
+  },
+  requestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

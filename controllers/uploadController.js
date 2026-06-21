@@ -123,4 +123,47 @@ const uploadPayoutProof = [
   },
 ];
 
-module.exports = { uploadResume, uploadPayoutProof };
+// Profile picture upload — image only, any authenticated user
+const profilePicUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type. Allowed: JPEG, PNG, WEBP'));
+  },
+});
+
+// POST /api/uploads/profile-pic
+const uploadProfilePic = [
+  profilePicUpload.single('profilePic'),
+  async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ status: 'error', message: 'Not authenticated' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ status: 'error', message: 'No file uploaded. Use field name "profilePic".' });
+      }
+
+      const folder = `profile_pics/${req.user._id}`;
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: 'image', folder, overwrite: true, public_id: 'avatar' },
+        async (error, result) => {
+          if (error) {
+            return res.status(500).json({ status: 'error', message: error.message || 'Upload failed' });
+          }
+          const secureUrl = result.secure_url || result.url;
+          await User.findByIdAndUpdate(req.user._id, { profilePicUrl: secureUrl });
+          return res.json({ status: 'success', data: { url: secureUrl } });
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ status: 'error', message });
+    }
+  },
+];
+
+module.exports = { uploadResume, uploadPayoutProof, uploadProfilePic };

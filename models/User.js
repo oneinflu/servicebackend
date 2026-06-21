@@ -63,6 +63,12 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category'
   }],
+  // Profile picture URL (uploaded to Cloudinary)
+  profilePicUrl: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   // Optional resume URL (link to external file or storage)
   resumeUrl: {
     type: String,

@@ -51,4 +51,21 @@ const isAdmin = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, isAdmin };
+// Sets req.user if a valid token is present, but never rejects the request.
+const protectOptional = async (req, res, next) => {
+  try {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select('-password').populate('company');
+    }
+  } catch (_) {
+    // ignore invalid tokens — request continues without req.user
+  }
+  next();
+};
+
+module.exports = { protect, isAdmin, protectOptional };

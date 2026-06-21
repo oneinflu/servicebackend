@@ -3,11 +3,12 @@ import { categoryAPI } from '../api/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { Search, Plus, Trash2, Edit2, Zap, Briefcase, Filter } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Zap, Briefcase, CheckCircle, XCircle } from 'lucide-react';
 import './Categories.css';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
+  const [pendingCategories, setPendingCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Service');
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +18,7 @@ const Categories = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchPendingCategories();
   }, []);
 
   const fetchCategories = async () => {
@@ -27,6 +29,35 @@ const Categories = () => {
       console.error('Failed to fetch categories', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingCategories = async () => {
+    try {
+      const response = await categoryAPI.getPending();
+      setPendingCategories(response.data.data.categories || []);
+    } catch (err) {
+      console.error('Failed to fetch pending categories', err);
+    }
+  };
+
+  const handleApprove = async (id) => {
+    try {
+      await categoryAPI.approve(id);
+      fetchCategories();
+      fetchPendingCategories();
+    } catch (err) {
+      alert('Failed to approve category');
+    }
+  };
+
+  const handleReject = async (id) => {
+    if (!window.confirm('Reject and delete this category request?')) return;
+    try {
+      await categoryAPI.delete(id);
+      fetchPendingCategories();
+    } catch (err) {
+      alert('Failed to reject category');
     }
   };
 
@@ -76,81 +107,147 @@ const Categories = () => {
     <div className="categories-page">
       <div className="page-header-actions">
         <div className="category-toggle">
-          <button 
+          <button
             className={`toggle-btn ${activeTab === 'Service' ? 'active' : ''}`}
             onClick={() => setActiveTab('Service')}
           >
             <Zap size={16} />
             Services
           </button>
-          <button 
+          <button
             className={`toggle-btn ${activeTab === 'Job' ? 'active' : ''}`}
             onClick={() => setActiveTab('Job')}
           >
             <Briefcase size={16} />
             Jobs
           </button>
+          <button
+            className={`toggle-btn ${activeTab === 'Pending' ? 'active' : ''}`}
+            onClick={() => setActiveTab('Pending')}
+            style={{ position: 'relative' }}
+          >
+            Pending
+            {pendingCategories.length > 0 && (
+              <span style={{
+                position: 'absolute', top: '-6px', right: '-6px',
+                background: '#ef4444', color: '#fff', borderRadius: '50%',
+                fontSize: '10px', width: '18px', height: '18px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700,
+              }}>
+                {pendingCategories.length}
+              </span>
+            )}
+          </button>
         </div>
 
-        <div className="search-and-add">
-          <div className="search-box">
-            <Search size={18} />
-            <input 
-              type="text" 
-              placeholder={`Search ${activeTab.toLowerCase()} categories...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        {activeTab !== 'Pending' && (
+          <div className="search-and-add">
+            <div className="search-box">
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder={`Search ${activeTab.toLowerCase()} categories...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button variant="primary" onClick={() => handleOpenModal()}>
+              <Plus size={18} /> Add Category
+            </Button>
           </div>
-          <Button variant="primary" onClick={() => handleOpenModal()}>
-            <Plus size={18} /> Add Category
-          </Button>
-        </div>
+        )}
       </div>
 
-      <Card className="full-width-card">
-        <table className="sb-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Category Name</th>
-              <th>Type</th>
-              <th>Created Date</th>
-              <th className="text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan="5" className="text-center">Loading...</td></tr>
-            ) : filteredCategories.length === 0 ? (
-              <tr><td colSpan="5" className="text-center">No categories found in this section.</td></tr>
-            ) : (
-              filteredCategories.map((cat, index) => (
-                <tr key={cat._id}>
-                  <td className="dim-text">#{index + 1}</td>
-                  <td><b>{cat.name}</b></td>
-                  <td>
-                    <span className={`type-badge ${cat.type.toLowerCase()}`}>
-                      {cat.type}
-                    </span>
-                  </td>
-                  <td className="dim-text">{new Date(cat.createdAt).toLocaleDateString()}</td>
-                  <td className="text-right">
-                    <div className="action-btns end">
-                      <button className="icon-btn edit" onClick={() => handleOpenModal(cat)}>
-                        <Edit2 size={16} />
-                      </button>
-                      <button className="icon-btn delete" onClick={() => handleDelete(cat._id)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </Card>
+      {activeTab === 'Pending' ? (
+        <Card className="full-width-card">
+          <table className="sb-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Category Name</th>
+                <th>Type</th>
+                <th>Requested By</th>
+                <th>Date</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingCategories.length === 0 ? (
+                <tr><td colSpan="6" className="text-center">No pending category requests.</td></tr>
+              ) : (
+                pendingCategories.map((cat, index) => (
+                  <tr key={cat._id}>
+                    <td className="dim-text">#{index + 1}</td>
+                    <td><b>{cat.name}</b></td>
+                    <td>
+                      <span className={`type-badge ${cat.type.toLowerCase()}`}>{cat.type}</span>
+                    </td>
+                    <td className="dim-text">
+                      {cat.requestedBy ? `${cat.requestedBy.name} (${cat.requestedBy.email})` : '—'}
+                    </td>
+                    <td className="dim-text">{new Date(cat.createdAt).toLocaleDateString()}</td>
+                    <td className="text-right">
+                      <div className="action-btns end">
+                        <button className="icon-btn edit" title="Approve" onClick={() => handleApprove(cat._id)}>
+                          <CheckCircle size={16} />
+                        </button>
+                        <button className="icon-btn delete" title="Reject" onClick={() => handleReject(cat._id)}>
+                          <XCircle size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </Card>
+      ) : (
+        <Card className="full-width-card">
+          <table className="sb-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Category Name</th>
+                <th>Type</th>
+                <th>Created Date</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="5" className="text-center">Loading...</td></tr>
+              ) : filteredCategories.length === 0 ? (
+                <tr><td colSpan="5" className="text-center">No categories found in this section.</td></tr>
+              ) : (
+                filteredCategories.map((cat, index) => (
+                  <tr key={cat._id}>
+                    <td className="dim-text">#{index + 1}</td>
+                    <td><b>{cat.name}</b></td>
+                    <td>
+                      <span className={`type-badge ${cat.type.toLowerCase()}`}>
+                        {cat.type}
+                      </span>
+                    </td>
+                    <td className="dim-text">{new Date(cat.createdAt).toLocaleDateString()}</td>
+                    <td className="text-right">
+                      <div className="action-btns end">
+                        <button className="icon-btn edit" onClick={() => handleOpenModal(cat)}>
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="icon-btn delete" onClick={() => handleDelete(cat._id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       {isModalOpen && (
         <div className="sb-modal-overlay">

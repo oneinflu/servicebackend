@@ -32,26 +32,27 @@ exports.createCategories = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find();
-    
-    res.status(200).json({
-      status: 'success',
-      data: {
-        categories
-      }
-    });
+    const categories = await Category.find({ status: 'approved' });
+    res.status(200).json({ status: 'success', data: { categories } });
   } catch (error) {
-    res.status(400).json({
-      status: 'error',
-      message: error.message
-    });
+    res.status(400).json({ status: 'error', message: error.message });
   }
 };
+
+exports.getPendingCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ status: 'pending' })
+      .populate('requestedBy', 'name email');
+    res.status(200).json({ status: 'success', data: { categories } });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
 exports.getCategoriesByType = async (req, res) => {
   try {
     const { type } = req.params;
 
-    // Validate type
     if (!['Service', 'Job'].includes(type)) {
       return res.status(400).json({
         status: 'error',
@@ -59,7 +60,8 @@ exports.getCategoriesByType = async (req, res) => {
       });
     }
 
-    const categories = await Category.find({ type });
+    // Public: only approved
+    const categories = await Category.find({ type, status: 'approved' });
 
     res.status(200).json({
       status: 'success',
@@ -72,6 +74,58 @@ exports.getCategoriesByType = async (req, res) => {
       status: 'error',
       message: error.message
     });
+  }
+};
+
+// Authenticated user requests a new category (goes to pending)
+exports.requestCategory = async (req, res) => {
+  try {
+    const { name, type } = req.body;
+
+    if (!name || !type) {
+      return res.status(400).json({ status: 'error', message: 'Name and type are required' });
+    }
+    if (!['Service', 'Job'].includes(type)) {
+      return res.status(400).json({ status: 'error', message: 'Type must be "Service" or "Job"' });
+    }
+
+    const existing = await Category.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    if (existing) {
+      return res.status(400).json({ status: 'error', message: 'A category with this name already exists or is pending approval' });
+    }
+
+    const category = await Category.create({
+      name,
+      type,
+      status: 'pending',
+      requestedBy: req.user._id,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Category request submitted for admin approval',
+      data: { category }
+    });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
+  }
+};
+
+// Admin approves a pending category
+exports.approveCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Category.findByIdAndUpdate(
+      id,
+      { status: 'approved' },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ status: 'error', message: 'Category not found' });
+    }
+    res.status(200).json({ status: 'success', data: { category: updated } });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
   }
 };
 

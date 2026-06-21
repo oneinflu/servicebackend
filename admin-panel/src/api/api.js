@@ -38,13 +38,16 @@ export const authAPI = {
   getProfile: () => api.get('/auth/profile'),
   updateProfile: (data) => api.put('/auth/profile', data),
   getAllUsers: () => api.get('/auth/users'),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`),
 };
 
 export const categoryAPI = {
   getAll: () => api.get('/categories'),
+  getPending: () => api.get('/categories/pending'),
   create: (data) => api.post('/categories', data),
   update: (id, data) => api.put(`/categories/${id}`, data),
   delete: (id) => api.delete(`/categories/${id}`),
+  approve: (id) => api.put(`/categories/${id}/approve`),
 };
 
 export const serviceAPI = {
