@@ -3,6 +3,7 @@ const Category = require('../models/Category');
 const Subscription = require('../models/Subscription');
 const User = require('../models/User');
 const { resolveLocality } = require('../lib/locationService');
+const { getSettingValue } = require('./settingsController');
 
 exports.createJob = async (req, res) => {
   try {
@@ -62,6 +63,9 @@ exports.createJob = async (req, res) => {
       });
     }
 
+    const jobExpiryDays = await getSettingValue('jobExpiryDays') || 7;
+    const expiresAt = new Date(Date.now() + jobExpiryDays * 24 * 60 * 60 * 1000);
+
     const job = await Job.create({
       categories: categoriesIds,
       location: {
@@ -75,7 +79,8 @@ exports.createJob = async (req, res) => {
       },
       isCompanyPost: isCompanyPost || false,
       companyId: companyId || null,
-      user: req.user._id // Assuming you have authentication middleware
+      user: req.user._id,
+      expiresAt,
     });
 
     res.status(201).json({
@@ -628,8 +633,9 @@ exports.cloneJob = async (req, res) => {
     delete newJobData.updatedAt;
     delete newJobData.__v;
 
+    const jobExpiryDays = await getSettingValue('jobExpiryDays') || 7;
     newJobData.status = 'active';
-    newJobData.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    newJobData.expiresAt = new Date(Date.now() + jobExpiryDays * 24 * 60 * 60 * 1000);
 
     const newJob = await Job.create(newJobData);
 
