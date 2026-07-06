@@ -297,6 +297,105 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Admin: assign/change which user referred a given user
+exports.setReferrer = async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied. Admins only.'
+      });
+    }
+
+    const { id } = req.params;
+    const { referrerId } = req.body;
+
+    if (referrerId && referrerId === id) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'A user cannot be their own referrer'
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    let newReferrer = null;
+    if (referrerId) {
+      newReferrer = await User.findById(referrerId);
+      if (!newReferrer) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Referrer not found'
+        });
+      }
+
+      // Prevent creating a cycle (referrer is a descendant of the user)
+      let ancestor = newReferrer;
+      while (ancestor) {
+        if (ancestor._id.toString() === user._id.toString()) {
+          return res.status(400).json({
+            status: 'error',
+            message: 'Cannot assign this referrer — it would create a circular referral chain'
+          });
+        }
+        ancestor = ancestor.referredBy ? await User.findById(ancestor.referredBy) : null;
+      }
+    }
+
+    const oldReferrerId = user.referredBy ? user.referredBy.toString() : null;
+    const newReferrerId = newReferrer ? newReferrer._id.toString() : null;
+
+    if (oldReferrerId === newReferrerId) {
+      const unchanged = await User.findById(id)
+        .select('name email phone isAdmin referralId referredBy referralCount profilePicUrl createdAt updatedAt')
+        .populate('referredBy', 'name');
+      return res.status(200).json({ status: 'success', data: { user: unchanged } });
+    }
+
+    // Detach from the old referrer, if any
+    if (oldReferrerId) {
+      await User.findByIdAndUpdate(oldReferrerId, {
+        $inc: { referralCount: -1 },
+        $pull: { referredUsers: user._id }
+      });
+    }
+
+    // Attach to the new referrer, if any
+    if (newReferrerId) {
+      await User.findByIdAndUpdate(newReferrerId, {
+        $inc: { referralCount: 1 },
+        $addToSet: { referredUsers: user._id }
+      });
+    }
+
+    if (newReferrerId) {
+      await User.findByIdAndUpdate(id, { referredBy: newReferrerId });
+    } else {
+      await User.findByIdAndUpdate(id, { $unset: { referredBy: '' } });
+    }
+
+    const updatedUser = await User.findById(id)
+      .select('name email phone isAdmin referralId referredBy referralCount profilePicUrl createdAt updatedAt')
+      .populate('referredBy', 'name');
+
+    res.status(200).json({
+      status: 'success',
+      data: { user: updatedUser }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
 // Admin: delete a user by ID
 exports.deleteUser = async (req, res) => {
   try {
