@@ -281,7 +281,8 @@ exports.getAllUsers = async (req, res) => {
     }
 
     const users = await User.find()
-      .select('name email phone isAdmin referralId referralCount profilePicUrl createdAt updatedAt');
+      .select('name email phone isAdmin referralId referredBy referralCount profilePicUrl createdAt updatedAt')
+      .populate('referredBy', 'name');
 
     res.status(200).json({
       status: 'success',
