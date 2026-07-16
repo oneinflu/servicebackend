@@ -135,27 +135,6 @@ exports.getMyServices = async (req, res) => {
 
 exports.getAllServices = async (req, res) => {
   try {
-    // Admins can access all services without subscription checks
-    if (!req.user.isAdmin) {
-      // Check subscription for non-admin users
-      const userSubscriptions = await Subscription.find({
-        user: req.user._id,
-        endDate: { $gte: new Date() }
-      });
-
-      const canSearchServices = userSubscriptions.some(sub => 
-        ['SERVICE_SEARCH', 'SERVICE_POST'].includes(sub.type)
-      );
-
-      if (!canSearchServices) {
-        return res.status(403).json({
-          status: 'error',
-          message: 'Please subscribe to search services',
-          subscriptionRequired: true
-        });
-      }
-    }
-
     const services = await Service.find()
       .populate('categoryPrices.category')
       .populate('companyId')
@@ -183,26 +162,6 @@ exports.getAllServices = async (req, res) => {
 
 exports.getServiceById = async (req, res) => {
   try {
-    // Admins can access without subscription checks
-    if (!req.user.isAdmin) {
-      const userSubscriptions = await Subscription.find({
-        user: req.user._id,
-        endDate: { $gte: new Date() }
-      });
-
-      const canSearchServices = userSubscriptions.some(sub => 
-        ['SERVICE_SEARCH', 'SERVICE_POST'].includes(sub.type)
-      );
-
-      if (!canSearchServices) {
-        return res.status(403).json({
-          status: 'error',
-          message: 'Please subscribe to search services',
-          subscriptionRequired: true
-        });
-      }
-    }
-
     const service = await Service.findById(req.params.id)
       .populate('categoryPrices.category')
       .populate('companyId')
@@ -248,26 +207,6 @@ exports.searchServicesByKeyword = async (req, res) => {
         status: 'error',
         message: 'A search keyword or location filter is required'
       });
-    }
-
-    // Admins can search without subscription checks
-    if (!req.user.isAdmin) {
-      const userSubscriptions = await Subscription.find({
-        user: req.user._id,
-        endDate: { $gte: new Date() }
-      });
-
-      const canSearchServices = userSubscriptions.some(sub =>
-        ['SERVICE_SEARCH', 'SERVICE_POST'].includes(sub.type)
-      );
-
-      if (!canSearchServices) {
-        return res.status(403).json({
-          status: 'error',
-          message: 'Please subscribe to search services',
-          subscriptionRequired: true
-        });
-      }
     }
 
     const findQuery = {};
