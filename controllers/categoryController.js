@@ -98,13 +98,13 @@ exports.requestCategory = async (req, res) => {
     const category = await Category.create({
       name,
       type,
-      status: 'pending',
+      status: 'approved',
       requestedBy: req.user._id,
     });
 
     res.status(201).json({
       status: 'success',
-      message: 'Category request submitted for admin approval',
+      message: 'Category created',
       data: { category }
     });
   } catch (error) {
