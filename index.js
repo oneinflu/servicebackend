@@ -20,6 +20,7 @@ const walletRoutes = require('./routes/walletRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const appVersionRoutes = require('./routes/appVersionRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const homeRoutes = require('./routes/homeRoutes');
 const app = express();
 
 // Middleware
@@ -61,6 +62,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/app-version', appVersionRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/home', homeRoutes);
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
