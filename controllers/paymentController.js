@@ -23,7 +23,6 @@ exports.createOrder = async (req, res) => {
     }
 
     const subscriptionPrices = {
-      SERVICE_SEARCH: 100,
       JOB_SEARCH: 100,
       SERVICE_POST: 500
     };
@@ -97,10 +96,16 @@ exports.verifyPayment = async (req, res) => {
 
     // Define subscription prices
     const subscriptionPrices = {
-      SERVICE_SEARCH: 100,
       JOB_SEARCH: 100,
       SERVICE_POST: 500
     };
+
+    if (!subscriptionPrices[subscriptionType]) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid subscription type'
+      });
+    }
 
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !subscriptionType) {
       console.error('Missing required fields:', { razorpay_payment_id, razorpay_order_id, razorpay_signature, subscriptionType });
