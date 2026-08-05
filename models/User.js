@@ -32,6 +32,20 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  accountType: {
+    type: String,
+    enum: ['individual', 'business'],
+    default: 'individual'
+  },
+  location: {
+    address: { type: String, trim: true, default: '' },
+    district: { type: String, trim: true, default: '' },
+    state: { type: String, trim: true, default: '' },
+    city: { type: String, trim: true, default: '' },
+    taluk: { type: String, trim: true, default: '' },
+    pincode: { type: String, trim: true, default: '' },
+    country: { type: String, trim: true, default: '' }
+  },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'

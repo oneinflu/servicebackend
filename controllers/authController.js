@@ -323,6 +323,8 @@ exports.getProfile = async (req, res) => {
           referredUsers: user.referredUsers,
           company: user.company,
           profilePicUrl: user.profilePicUrl,
+          accountType: user.accountType,
+          location: user.location,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
@@ -339,7 +341,7 @@ exports.getProfile = async (req, res) => {
 // Update authenticated user's basic profile fields
 exports.updateProfile = async (req, res) => {
   try {
-    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo', 'profilePicUrl'];
+    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo', 'profilePicUrl', 'accountType', 'location'];
     const updates = {};
     for (const key of allowedFields) {
       if (key in req.body) updates[key] = req.body[key];
@@ -395,6 +397,8 @@ exports.updateProfile = async (req, res) => {
           referredUsers: updatedUser.referredUsers,
           company: updatedUser.company,
           profilePicUrl: updatedUser.profilePicUrl,
+          accountType: updatedUser.accountType,
+          location: updatedUser.location,
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt,
         }
