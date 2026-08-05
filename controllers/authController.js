@@ -405,6 +405,14 @@ exports.updateProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        status: 'error',
+        field,
+        message: `This ${field} is already in use`
+      });
+    }
     res.status(400).json({
       status: 'error',
       message: error.message
