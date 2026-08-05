@@ -5,7 +5,8 @@ const {
   searchGovernmentJobs,
   getGovernmentJobById,
   updateGovernmentJob,
-  deleteGovernmentJob
+  deleteGovernmentJob,
+  triggerGovernmentJobFetch
 } = require('../controllers/governmentJobController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -29,6 +30,7 @@ router.get('/:id', getGovernmentJobById);
 
 // Protected routes (admin only)
 router.post('/', protect, isAdmin, createGovernmentJob);
+router.post('/fetch', protect, isAdmin, triggerGovernmentJobFetch);
 router.patch('/:id', protect, isAdmin, updateGovernmentJob);
 router.delete('/:id', protect, isAdmin, deleteGovernmentJob);
 

@@ -21,6 +21,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const appVersionRoutes = require('./routes/appVersionRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const homeRoutes = require('./routes/homeRoutes');
+const { fetchGovernmentJobsFromWeb } = require('./lib/governmentJobFetcher');
 const app = express();
 
 // Middleware
@@ -67,6 +68,17 @@ app.use('/api/home', homeRoutes);
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
+
+// Auto-discover new government job postings from the web on a schedule —
+// no admin trigger needed. Runs shortly after boot, then every 12 hours.
+const GOVERNMENT_JOB_FETCH_INTERVAL_MS = 12 * 60 * 60 * 1000;
+function runGovernmentJobFetch() {
+  fetchGovernmentJobsFromWeb()
+    .then((result) => console.log('Government job auto-fetch:', result))
+    .catch((err) => console.error('Government job auto-fetch failed:', err.message));
+}
+setTimeout(runGovernmentJobFetch, 60 * 1000);
+setInterval(runGovernmentJobFetch, GOVERNMENT_JOB_FETCH_INTERVAL_MS);
 
 // Set up Handlebars
 app.engine('handlebars', exphbs.engine());
