@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const OtpVerification = require('../models/OtpVerification');
+const JobProfile = require('../models/JobProfile');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
@@ -299,6 +300,26 @@ exports.login = async (req, res) => {
   }
 };
 
+// Weighted, real completeness score — no fabricated numbers. Phone is
+// always present (OTP-verified at signup) so it's a flat baseline.
+async function computeProfileStrength(user) {
+  let score = 15; // phone, always verified
+
+  if (user.name && user.name.trim()) score += 20;
+  if (user.email && user.email.trim()) score += 15;
+  if (user.location && user.location.city && user.location.city.trim()) score += 20;
+  if (user.profilePicUrl && user.profilePicUrl.trim()) score += 15;
+
+  if (user.accountType === 'business') {
+    if (user.company) score += 15;
+  } else {
+    const hasJobProfile = await JobProfile.exists({ user: user._id });
+    if (hasJobProfile) score += 15;
+  }
+
+  return Math.min(100, score);
+}
+
 exports.getProfile = async (req, res) => {
   try {
     // Get user with referral and company information populated
@@ -306,6 +327,8 @@ exports.getProfile = async (req, res) => {
       .populate('referredBy', 'name email referralId')
       .populate('referredUsers', 'name email referralId')
       .populate('company');
+
+    const profileStrength = await computeProfileStrength(user);
 
     res.status(200).json({
       status: 'success',
@@ -325,6 +348,7 @@ exports.getProfile = async (req, res) => {
           profilePicUrl: user.profilePicUrl,
           accountType: user.accountType,
           location: user.location,
+          profileStrength,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
@@ -381,6 +405,8 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
+    const profileStrength = await computeProfileStrength(updatedUser);
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -399,6 +425,7 @@ exports.updateProfile = async (req, res) => {
           profilePicUrl: updatedUser.profilePicUrl,
           accountType: updatedUser.accountType,
           location: updatedUser.location,
+          profileStrength,
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt,
         }

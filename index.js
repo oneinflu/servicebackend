@@ -21,6 +21,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const appVersionRoutes = require('./routes/appVersionRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const homeRoutes = require('./routes/homeRoutes');
+const activityRoutes = require('./routes/activityRoutes');
 const { fetchGovernmentJobsFromWeb } = require('./lib/governmentJobFetcher');
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/location', locationRoutes);
 app.use('/api/app-version', appVersionRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/home', homeRoutes);
+app.use('/api/activity', activityRoutes);
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
