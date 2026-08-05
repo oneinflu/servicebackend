@@ -1,6 +1,7 @@
 const Service = require('../models/Service');
 const Job = require('../models/Job');
 const Category = require('../models/Category');
+const Subscription = require('../models/Subscription');
 
 // AI Suggestions: real data — the categories with the most active posts right now,
 // phrased as a search shortcut. No ML involved, just usage-ranked categories.
@@ -68,7 +69,8 @@ exports.getTrending = async (req, res) => {
 
 // Professionals Near You: real service providers and real prices/locations.
 // No star ratings, distance-in-km, or live availability — none of that is
-// tracked anywhere yet, so we don't fabricate it.
+// tracked anywhere yet, so we don't fabricate it. "Verified" is real too:
+// a company post, or an individual with an active SERVICE_POST subscription.
 exports.getProfessionalsNearYou = async (req, res) => {
   try {
     const { city, district, limit } = req.query;
@@ -83,10 +85,22 @@ exports.getProfessionalsNearYou = async (req, res) => {
       .populate('companyId', 'name')
       .populate('user', 'name phone');
 
+    const individualUserIds = services
+      .filter((s) => !s.isCompanyPost)
+      .map((s) => s.user?._id)
+      .filter(Boolean);
+    const activeSubs = await Subscription.find({
+      user: { $in: individualUserIds },
+      type: 'SERVICE_POST',
+      endDate: { $gte: new Date() }
+    }).select('user');
+    const verifiedUserIds = new Set(activeSubs.map((s) => String(s.user)));
+
     const professionals = services.map((s) => ({
       id: s._id,
       providerName: s.isCompanyPost ? s.companyId?.name : s.user?.name,
       isCompanyPost: s.isCompanyPost,
+      verified: s.isCompanyPost ? true : verifiedUserIds.has(String(s.user?._id)),
       locality: `${s.location.city}, ${s.location.district}`,
       categories: s.categoryPrices.map((cp) => ({ name: cp.category?.name, price: cp.price })),
       startingPrice: Math.min(...s.categoryPrices.map((cp) => cp.price)),
