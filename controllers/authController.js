@@ -70,7 +70,7 @@ exports.sendOtp = async (req, res) => {
 exports.verifyOtp = async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);
-    const { otp, name } = req.body;
+    const { otp } = req.body;
 
     if (!phone || !otp) {
       return res.status(400).json({
@@ -93,16 +93,11 @@ exports.verifyOtp = async (req, res) => {
     let isNewUser = false;
 
     if (!user) {
-      if (!name || !name.trim()) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Name is required to create an account'
-        });
-      }
-
+      // Account is created from phone + OTP alone; name/email are collected
+      // afterwards via PUT /api/auth/profile.
       const randomString = Math.random().toString(36).substring(2, 8);
-      const referralId = `${name.substring(0, 3)}${randomString}`.toUpperCase();
-      user = await User.create({ name: name.trim(), phone, referralId });
+      const referralId = `U${randomString}`.toUpperCase();
+      user = await User.create({ phone, referralId });
       isNewUser = true;
     }
 
@@ -350,6 +345,18 @@ exports.updateProfile = async (req, res) => {
       if (key in req.body) updates[key] = req.body[key];
     }
 
+    // Phone/OTP signups apply their referral code here instead of at
+    // account-creation time. Only ever set once.
+    let referrer = null;
+    if (req.body.referral_code && !req.user.referredBy) {
+      referrer = await User.findOne({ referralId: req.body.referral_code });
+      if (referrer && String(referrer._id) !== String(req.user._id)) {
+        updates.referredBy = referrer._id;
+      } else {
+        referrer = null;
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, {
       new: true,
       runValidators: true,
@@ -362,6 +369,13 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
+      });
+    }
+
+    if (referrer) {
+      await User.findByIdAndUpdate(referrer._id, {
+        $inc: { referralCount: 1 },
+        $push: { referredUsers: updatedUser._id }
       });
     }
 
