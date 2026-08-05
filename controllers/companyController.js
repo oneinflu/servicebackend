@@ -4,6 +4,11 @@ const { resolveLocality } = require('../lib/locationService');
 
 // Helper: build location from locality or full location object
 async function buildLocation(locality, location) {
+  // Already resolved client-side (e.g. Google Places) — use it as-is, don't
+  // re-resolve from the raw locality text and throw away city/lat/lng.
+  if (location && location.city && location.city.trim() !== '') {
+    return location;
+  }
   if (locality && locality.trim() !== '') {
     const resolved = await resolveLocality(locality.trim());
     return {

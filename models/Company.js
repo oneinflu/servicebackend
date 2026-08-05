@@ -35,6 +35,14 @@ const companySchema = new mongoose.Schema({
     pincode: {
       type: String,
       required: false
+    },
+    lat: {
+      type: Number,
+      required: false
+    },
+    lng: {
+      type: Number,
+      required: false
     }
   },
   website: {
