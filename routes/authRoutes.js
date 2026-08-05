@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, registerAdmin, getProfile, updateProfile, getAllUsers, deleteUser, setReferrer } = require('../controllers/authController');
+const { register, login, registerAdmin, getProfile, updateProfile, getAllUsers, deleteUser, setReferrer, sendOtp, verifyOtp } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -7,6 +7,8 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/register-admin', registerAdmin);
 router.post('/login', login);
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
 router.get('/users', protect, getAllUsers);

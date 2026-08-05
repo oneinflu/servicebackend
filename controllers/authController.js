@@ -1,10 +1,134 @@
 const User = require('../models/User');
+const OtpVerification = require('../models/OtpVerification');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d'
   });
+};
+
+// Strips everything but digits and keeps the last 10 (drops a leading country code like +91).
+const normalizePhone = (phone) => String(phone || '').replace(/\D/g, '').slice(-10);
+
+const sendOtpSms = async (phone, otp) => {
+  const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+    method: 'POST',
+    headers: {
+      authorization: process.env.FAST2SMS_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      route: 'otp',
+      variables_values: otp,
+      numbers: phone
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok || data.return !== true) {
+    throw new Error(data.message || 'Failed to send OTP');
+  }
+};
+
+exports.sendOtp = async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+    if (phone.length !== 10) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Enter a valid 10-digit phone number'
+      });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await OtpVerification.findOneAndUpdate(
+      { phone },
+      { otp, expiresAt },
+      { upsert: true, new: true }
+    );
+
+    await sendOtpSms(phone, otp);
+
+    const existingUser = await User.findOne({ phone });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'OTP sent',
+      data: { isNewUser: !existingUser }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+    const { otp, name } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Phone and OTP are required'
+      });
+    }
+
+    const record = await OtpVerification.findOne({ phone });
+    if (!record || record.otp !== String(otp) || record.expiresAt < new Date()) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    await OtpVerification.deleteOne({ _id: record._id });
+
+    let user = await User.findOne({ phone });
+    let isNewUser = false;
+
+    if (!user) {
+      if (!name || !name.trim()) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Name is required to create an account'
+        });
+      }
+
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const referralId = `${name.substring(0, 3)}${randomString}`.toUpperCase();
+      user = await User.create({ name: name.trim(), phone, referralId });
+      isNewUser = true;
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      status: 'success',
+      isNewUser,
+      token,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          referralId: user.referralId,
+          isAdmin: user.isAdmin
+        }
+      }
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
+  }
 };
 
 exports.register = async (req, res) => {
