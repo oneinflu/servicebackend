@@ -44,7 +44,9 @@ const userSchema = new mongoose.Schema({
     city: { type: String, trim: true, default: '' },
     taluk: { type: String, trim: true, default: '' },
     pincode: { type: String, trim: true, default: '' },
-    country: { type: String, trim: true, default: '' }
+    country: { type: String, trim: true, default: '' },
+    lat: { type: Number },
+    lng: { type: Number }
   },
   company: {
     type: mongoose.Schema.Types.ObjectId,
