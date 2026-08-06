@@ -113,6 +113,22 @@ exports.searchJobProfiles = async (req, res) => {
       ];
     }
 
+    if (city && city.trim() !== '') {
+      query['location.city'] = new RegExp(city.trim(), 'i');
+    }
+    if (state && state.trim() !== '') {
+      query['location.state'] = new RegExp(state.trim(), 'i');
+    }
+    if (district && district.trim() !== '') {
+      query['location.district'] = new RegExp(district.trim(), 'i');
+    }
+    if (country && country.trim() !== '') {
+      query['location.country'] = new RegExp(country.trim(), 'i');
+    }
+    if (pincode && pincode.trim() !== '') {
+      query['location.pincode'] = pincode.trim();
+    }
+
     const profiles = await JobProfile.find(query)
       .populate('categories')
       .populate('user', 'name email phone');
