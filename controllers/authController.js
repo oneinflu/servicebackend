@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const OtpVerification = require('../models/OtpVerification');
 const JobProfile = require('../models/JobProfile');
-const Service = require('../models/Service');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
@@ -301,38 +300,26 @@ exports.login = async (req, res) => {
   }
 };
 
-// Weighted, real completeness score — no fabricated numbers. Phone is
-// always present (OTP-verified at signup) so it's a flat baseline.
+// Real completeness score, no fabricated numbers — two even halves:
+// Profile Information (name/email/location/photo) is always the first 50%.
+// The second 50% is account-type specific: Company Information for
+// business accounts, Job Profile for individuals.
 async function computeProfileStrength(user) {
-  let score = 10; // phone, always verified
+  let profileScore = 0;
+  if (user.name && user.name.trim()) profileScore += 15;
+  if (user.email && user.email.trim()) profileScore += 10;
+  if (user.location && user.location.city && user.location.city.trim()) profileScore += 15;
+  if (user.profilePicUrl && user.profilePicUrl.trim()) profileScore += 10;
 
-  if (user.name && user.name.trim()) score += 15;
-  if (user.email && user.email.trim()) score += 10;
-  if (user.location && user.location.city && user.location.city.trim()) score += 15;
-  if (user.profilePicUrl && user.profilePicUrl.trim()) score += 10;
-  if (user.intent && user.intent.trim()) score += 10;
-
-  // The last 30% is intent-specific — completing the thing that actually
-  // matters for what they said they're here for, not a generic checkbox.
+  let secondHalfScore = 0;
   if (user.accountType === 'business') {
-    if (user.company) score += 30;
-  } else if (user.intent === 'service_provider') {
-    const hasService = await Service.exists({ user: user._id });
-    if (hasService) score += 30;
-  } else if (user.intent === 'both') {
-    const [hasJobProfile, hasService] = await Promise.all([
-      JobProfile.exists({ user: user._id }),
-      Service.exists({ user: user._id })
-    ]);
-    if (hasJobProfile) score += 15;
-    if (hasService) score += 15;
+    if (user.company) secondHalfScore = 50;
   } else {
-    // Default / job_seeker
     const hasJobProfile = await JobProfile.exists({ user: user._id });
-    if (hasJobProfile) score += 30;
+    if (hasJobProfile) secondHalfScore = 50;
   }
 
-  return Math.min(100, score);
+  return Math.min(100, profileScore + secondHalfScore);
 }
 
 exports.getProfile = async (req, res) => {
