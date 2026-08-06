@@ -76,6 +76,8 @@ exports.createJob = async (req, res) => {
         taluk: jobLocation.taluk || '',
         country: jobLocation.country,
         pincode: jobLocation.pincode,
+        lat: jobLocation.lat,
+        lng: jobLocation.lng,
       },
       isCompanyPost: isCompanyPost || false,
       companyId: companyId || null,
@@ -433,11 +435,11 @@ exports.updateJob = async (req, res) => {
     }
 
     if (jobLocation) {
-      const { address, district, state, city, country, pincode, taluk } = jobLocation;
+      const { address, district, state, city, country, pincode, taluk, lat, lng } = jobLocation;
       if (!address || !district || !state || !city || !country || !pincode) {
         return res.status(400).json({ status: 'error', message: 'Full location (address, district, state, city, country, pincode) is required' });
       }
-      updates.location = { address, district, state, city, country, pincode, taluk: taluk || '' };
+      updates.location = { address, district, state, city, country, pincode, taluk: taluk || '', lat, lng };
     }
 
     if (typeof isCompanyPost !== 'undefined') {

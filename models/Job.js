@@ -34,7 +34,9 @@ const jobSchema = new mongoose.Schema({
     country: {
       type: String,
       required: [true, 'Country is required']
-    }
+    },
+    lat: { type: Number },
+    lng: { type: Number }
   },
   isCompanyPost: {
     type: Boolean,

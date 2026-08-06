@@ -93,6 +93,8 @@ exports.createService = async (req, res) => {
         taluk: serviceLocation.taluk || '',
         country: serviceLocation.country,
         pincode: serviceLocation.pincode,
+        lat: serviceLocation.lat,
+        lng: serviceLocation.lng,
       },
       isCompanyPost,
       companyId,
@@ -394,11 +396,11 @@ exports.updateService = async (req, res) => {
     }
 
     if (serviceLocation) {
-      const { address, district, state, city, country, pincode, taluk } = serviceLocation;
+      const { address, district, state, city, country, pincode, taluk, lat, lng } = serviceLocation;
       if (!address || !district || !state || !city || !country || !pincode) {
         return res.status(400).json({ status: 'error', message: 'Full location (address, district, state, city, country, pincode) is required' });
       }
-      service.location = { address, district, state, city, country, pincode, taluk: taluk || '' };
+      service.location = { address, district, state, city, country, pincode, taluk: taluk || '', lat, lng };
     }
 
     if (typeof isCompanyPost !== 'undefined') {
