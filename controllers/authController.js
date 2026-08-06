@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const OtpVerification = require('../models/OtpVerification');
 const JobProfile = require('../models/JobProfile');
+const Service = require('../models/Service');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
@@ -303,18 +304,32 @@ exports.login = async (req, res) => {
 // Weighted, real completeness score — no fabricated numbers. Phone is
 // always present (OTP-verified at signup) so it's a flat baseline.
 async function computeProfileStrength(user) {
-  let score = 15; // phone, always verified
+  let score = 10; // phone, always verified
 
-  if (user.name && user.name.trim()) score += 20;
-  if (user.email && user.email.trim()) score += 15;
-  if (user.location && user.location.city && user.location.city.trim()) score += 20;
-  if (user.profilePicUrl && user.profilePicUrl.trim()) score += 15;
+  if (user.name && user.name.trim()) score += 15;
+  if (user.email && user.email.trim()) score += 10;
+  if (user.location && user.location.city && user.location.city.trim()) score += 15;
+  if (user.profilePicUrl && user.profilePicUrl.trim()) score += 10;
+  if (user.intent && user.intent.trim()) score += 10;
 
+  // The last 30% is intent-specific — completing the thing that actually
+  // matters for what they said they're here for, not a generic checkbox.
   if (user.accountType === 'business') {
-    if (user.company) score += 15;
-  } else {
-    const hasJobProfile = await JobProfile.exists({ user: user._id });
+    if (user.company) score += 30;
+  } else if (user.intent === 'service_provider') {
+    const hasService = await Service.exists({ user: user._id });
+    if (hasService) score += 30;
+  } else if (user.intent === 'both') {
+    const [hasJobProfile, hasService] = await Promise.all([
+      JobProfile.exists({ user: user._id }),
+      Service.exists({ user: user._id })
+    ]);
     if (hasJobProfile) score += 15;
+    if (hasService) score += 15;
+  } else {
+    // Default / job_seeker
+    const hasJobProfile = await JobProfile.exists({ user: user._id });
+    if (hasJobProfile) score += 30;
   }
 
   return Math.min(100, score);
@@ -347,6 +362,7 @@ exports.getProfile = async (req, res) => {
           company: user.company,
           profilePicUrl: user.profilePicUrl,
           accountType: user.accountType,
+          intent: user.intent,
           location: user.location,
           profileStrength,
           createdAt: user.createdAt,
@@ -365,7 +381,7 @@ exports.getProfile = async (req, res) => {
 // Update authenticated user's basic profile fields
 exports.updateProfile = async (req, res) => {
   try {
-    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo', 'profilePicUrl', 'accountType', 'location'];
+    const allowedFields = ['name', 'email', 'phone', 'skippedCompanyInfo', 'profilePicUrl', 'accountType', 'intent', 'location'];
     const updates = {};
     for (const key of allowedFields) {
       if (key in req.body) updates[key] = req.body[key];
@@ -424,6 +440,7 @@ exports.updateProfile = async (req, res) => {
           company: updatedUser.company,
           profilePicUrl: updatedUser.profilePicUrl,
           accountType: updatedUser.accountType,
+          intent: updatedUser.intent,
           location: updatedUser.location,
           profileStrength,
           createdAt: updatedUser.createdAt,

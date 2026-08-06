@@ -37,6 +37,13 @@ const userSchema = new mongoose.Schema({
     enum: ['individual', 'business'],
     default: 'individual'
   },
+  // What the user told us they're here for at onboarding — drives home
+  // screen personalization and the profile-strength calculation.
+  intent: {
+    type: String,
+    enum: ['job_seeker', 'service_provider', 'both', ''],
+    default: ''
+  },
   location: {
     address: { type: String, trim: true, default: '' },
     district: { type: String, trim: true, default: '' },
