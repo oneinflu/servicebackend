@@ -102,4 +102,9 @@ export const referralAPI = {
   getAll: () => api.get('/referrals'),
 };
 
+export const notificationAPI = {
+  send: (data) => api.post('/notifications/send', data),
+  getSent: () => api.get('/notifications/sent'),
+};
+
 export default api;

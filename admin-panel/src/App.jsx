@@ -13,6 +13,7 @@ import Subscriptions from './pages/Subscriptions';
 import Payments from './pages/Payments';
 import Referrals from './pages/Referrals';
 import Companies from './pages/Companies';
+import Notifications from './pages/Notifications';
 
 // Placeholder for remaining minor pages
 const Placeholder = ({ name }) => (
@@ -59,6 +60,7 @@ function App() {
           <Route path="/payments" element={<Payments />} />
           <Route path="/usage" element={<Placeholder name="Platform Usage" />} />
           <Route path="/referrals" element={<Referrals />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       </Routes>

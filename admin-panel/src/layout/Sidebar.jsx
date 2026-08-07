@@ -13,6 +13,7 @@ import {
   Building2,
   Gift,
   Search,
+  Bell,
   LogOut
 } from 'lucide-react';
 import './Sidebar.css';
@@ -31,6 +32,7 @@ const Sidebar = () => {
     { name: 'Payments', path: '/payments', icon: <CreditCard size={20} /> },
     { name: 'Usage', path: '/usage', icon: <TrendingUp size={20} /> },
     { name: 'Referrals', path: '/referrals', icon: <Gift size={20} /> },
+    { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
   ];
 
   return (

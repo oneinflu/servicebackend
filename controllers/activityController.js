@@ -107,17 +107,40 @@ exports.logProfileView = async (req, res) => {
 exports.getMyStats = async (req, res) => {
   try {
     const userId = req.user._id;
-    const [jobsApplied, savedJobs, serviceLeads, profileViews] = await Promise.all([
-      JobApplication.countDocuments({ user: userId }),
-      SavedJob.countDocuments({ user: userId }),
-      ServiceLead.countDocuments({ provider: userId }),
-      ProfileView.countDocuments({ profileOwner: userId })
-    ]);
+    const isBusiness = req.user.accountType === 'business';
 
-    res.status(200).json({
-      status: 'success',
-      data: { jobsApplied, savedJobs, serviceLeads, profileViews }
-    });
+    if (isBusiness) {
+      const [jobsPosted, servicesPosted, profileViews] = await Promise.all([
+        Job.countDocuments({ user: userId }),
+        Service.countDocuments({ user: userId }),
+        ProfileView.countDocuments({ profileOwner: userId })
+      ]);
+      res.status(200).json({
+        status: 'success',
+        data: {
+          jobsPosted,
+          savedProfiles: 0,
+          servicesPosted,
+          profileViews
+        }
+      });
+    } else {
+      const [jobsApplied, savedJobs, servicesPosted, profileViews] = await Promise.all([
+        JobApplication.countDocuments({ user: userId }),
+        SavedJob.countDocuments({ user: userId }),
+        Service.countDocuments({ user: userId }),
+        ProfileView.countDocuments({ profileOwner: userId })
+      ]);
+      res.status(200).json({
+        status: 'success',
+        data: {
+          jobsApplied,
+          savedJobs,
+          servicesPosted,
+          profileViews
+        }
+      });
+    }
   } catch (error) {
     res.status(400).json({ status: 'error', message: error.message });
   }
